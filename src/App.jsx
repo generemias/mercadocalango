@@ -5,6 +5,7 @@ import Cadastro from './pages/Cadastro'
 import EsqueciSenha from './pages/EsqueciSenha'
 import Home from './pages/Home'
 import Lista from './pages/Lista'
+import Explorar from './pages/Explorar'
 import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
 
 /**
@@ -90,11 +91,24 @@ function App() {
     return (
       <Lista
         onNavigateToHome={() => setTela('home')}
-        // TODO: Explorar mercados e Perfil ainda não existem (próximas
-        // etapas do MVP) — por isso esses callbacks só ficam registrados
-        // aqui, sem nenhuma tela de destino por enquanto.
-        onNavigateToExplorar={() => console.log('[Lista] TODO: navegar para Explorar mercados')}
+        onNavigateToExplorar={() => setTela('explorar')}
+        // TODO: Perfil ainda não existe (próxima etapa do MVP) — por isso
+        // esse callback só fica registrado aqui, sem tela de destino.
         onNavigateToPerfil={() => console.log('[Lista] TODO: navegar para Perfil')}
+      />
+    )
+  }
+
+  if (tela === 'explorar') {
+    return (
+      <Explorar
+        onNavigateToHome={() => setTela('home')}
+        onNavigateToLista={() => setTela('lista')}
+        // TODO: Perfil ainda não existe (próxima etapa do MVP) — por isso
+        // esse callback só fica registrado aqui, sem tela de destino.
+        // A tela de detalhe do mercado (abrir um card desta lista) também
+        // ainda não existe — ver TODO dentro de Explorar.jsx.
+        onNavigateToPerfil={() => console.log('[Explorar] TODO: navegar para Perfil')}
       />
     )
   }
@@ -102,11 +116,10 @@ function App() {
   if (tela === 'home') {
     return (
       <Home
-        // TODO: Explorar mercados e Perfil ainda não existem (próximas
-        // etapas do MVP) — por isso esses callbacks só ficam registrados
-        // aqui, sem nenhuma tela de destino por enquanto.
         onNavigateToLista={() => setTela('lista')}
-        onNavigateToExplorar={() => console.log('[Home] TODO: navegar para Explorar mercados')}
+        onNavigateToExplorar={() => setTela('explorar')}
+        // TODO: Perfil ainda não existe (próxima etapa do MVP) — por isso
+        // esse callback só fica registrado aqui, sem tela de destino.
         onNavigateToPerfil={() => console.log('[Home] TODO: navegar para Perfil')}
       />
     )

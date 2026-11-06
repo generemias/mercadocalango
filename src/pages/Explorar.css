@@ -1,0 +1,302 @@
+/*
+  Tela Explorar mercados — mobile-first, reaproveitando as variáveis de
+  cor/sombra já definidas em src/index.css (--accent, --border, --text,
+  --text-h, --bg, --accent-bg, --code-bg) pra manter a mesma identidade
+  visual da Home, Lista e do fluxo de Login/Cadastro (Material Design 3 +
+  Google Maps + Notion + Apple).
+
+  Observação: ".bottom-nav" é a mesma regra repetida em Home.css/Lista.css
+  (ver comentário sobre isso em Lista.css) — mesma barra de navegação
+  inferior reaproveitada aqui.
+*/
+
+.explorar-screen {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  /* Espaço reservado pra barra de navegação inferior fixa não cobrir o
+     último card da lista de mercados. */
+  padding-bottom: 76px;
+}
+
+/* ---------- Topo ---------- */
+
+.explorar-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 4px;
+}
+
+.explorar-titulo {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.3px;
+  color: var(--text-h);
+}
+
+/* Botão "Ver no mapa" — hoje é só um placeholder visual (sem mapa real por
+   trás), por isso usa o estilo neutro/outline em vez da cor de destaque:
+   não deve competir com as ações que já funcionam de verdade na tela. */
+.explorar-mapa-botao {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.explorar-mapa-botao:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- Conteúdo ---------- */
+
+.explorar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 8px 20px 12px;
+}
+
+/* ---------- Busca ---------- */
+
+.explorar-busca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 0 14px;
+  background: var(--bg);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.explorar-busca:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.explorar-busca-icone {
+  flex: 0 0 auto;
+  font-size: 16px;
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.explorar-busca-input {
+  flex: 1 1 auto;
+  font: inherit;
+  font-size: 16px; /* >=16px evita zoom automático no iOS ao focar */
+  padding: 12px 0;
+  border: none;
+  background: none;
+  color: var(--text-h);
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+.explorar-busca-input::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.explorar-busca-input:focus {
+  outline: none;
+}
+
+/* ---------- Filtros (chips de toggle) ---------- */
+
+.explorar-filtros {
+  display: flex;
+  gap: 8px;
+}
+
+.chip-filtro {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.chip-filtro:hover {
+  border-color: var(--accent);
+}
+
+.chip-filtro.is-ativo {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ---------- Erro / carregando ----------
+   Mesmo estilo já usado em Home.css para manter consistência visual. */
+
+.explorar-erro {
+  font-size: 13.5px;
+  color: #b42318;
+  background: #fef3f2;
+  border: 1px solid #fda29b;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.explorar-secao-vazia {
+  font-size: 13.5px;
+  color: var(--text);
+  padding: 4px 0;
+}
+
+/* ---------- Estado vazio ----------
+   Mesmo tom amigável já usado na Home para seções sem dados (ex: nenhum
+   mercado próximo cadastrado ainda). */
+
+.explorar-vazio {
+  text-align: center;
+  padding: 48px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.explorar-vazio-titulo {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.explorar-vazio-texto {
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+/* ---------- Lista de mercados ---------- */
+
+.explorar-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-mercado-explorar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.card-mercado-explorar:hover {
+  border-color: var(--accent);
+}
+
+.card-mercado-explorar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.card-mercado-explorar-nome {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 130%;
+}
+
+.card-mercado-explorar-local {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+/* Indicador de promoção ativa — mesmo estilo de "badge-promocao" já usado
+   nos cards de mercado da Home, para manter o significado visual
+   consistente em todo o app (cor de destaque = tem promoção). */
+.badge-promocao {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+/* ---------- Barra de navegação inferior ----------
+   Mesma estrutura visual da Home/Lista (ver observação no topo do arquivo). */
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  z-index: 10;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  padding: 6px 4px;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.bottom-nav-item.is-active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.bottom-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.bottom-nav-label {
+  font-size: 11px;
+}
+
+/* ---------- Telas maiores ---------- */
+
+@media (min-width: 560px) {
+  .explorar-content {
+    padding: 8px 32px 12px;
+  }
+}
