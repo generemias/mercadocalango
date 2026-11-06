@@ -6,6 +6,7 @@ import EsqueciSenha from './pages/EsqueciSenha'
 import Home from './pages/Home'
 import Lista from './pages/Lista'
 import Explorar from './pages/Explorar'
+import MercadoDetalhe from './pages/MercadoDetalhe'
 import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
 
 /**
@@ -18,6 +19,11 @@ import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
  */
 function App() {
   const [tela, setTela] = useState('login')
+  // Qual mercado abrir na tela "Mercado (detalhe)" — guardado aqui porque
+  // ainda não existe roteador real (ver comentário acima sobre este
+  // "trocador de tela" temporário). Quando houver rotas de verdade, isso
+  // vira um parâmetro de rota (ex: /mercado/:id).
+  const [mercadoSelecionadoId, setMercadoSelecionadoId] = useState(null)
   // Enquanto checamos se já existe uma sessão salva pelo supabase-js (ele
   // guarda a sessão no localStorage por padrão), não sabemos ainda se o
   // usuário está logado. Sem esse estado, a tela de Login aparecia
@@ -99,15 +105,32 @@ function App() {
     )
   }
 
+  if (tela === 'mercado-detalhe') {
+    return (
+      <MercadoDetalhe
+        mercadoId={mercadoSelecionadoId}
+        onVoltar={() => setTela('explorar')}
+        onNavigateToHome={() => setTela('home')}
+        onNavigateToLista={() => setTela('lista')}
+        onNavigateToExplorar={() => setTela('explorar')}
+        // TODO: Perfil ainda não existe (próxima etapa do MVP) — por isso
+        // esse callback só fica registrado aqui, sem tela de destino.
+        onNavigateToPerfil={() => console.log('[MercadoDetalhe] TODO: navegar para Perfil')}
+      />
+    )
+  }
+
   if (tela === 'explorar') {
     return (
       <Explorar
         onNavigateToHome={() => setTela('home')}
         onNavigateToLista={() => setTela('lista')}
+        onNavigateToMercado={(mercadoId) => {
+          setMercadoSelecionadoId(mercadoId)
+          setTela('mercado-detalhe')
+        }}
         // TODO: Perfil ainda não existe (próxima etapa do MVP) — por isso
         // esse callback só fica registrado aqui, sem tela de destino.
-        // A tela de detalhe do mercado (abrir um card desta lista) também
-        // ainda não existe — ver TODO dentro de Explorar.jsx.
         onNavigateToPerfil={() => console.log('[Explorar] TODO: navegar para Perfil')}
       />
     )

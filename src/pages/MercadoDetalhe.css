@@ -1,0 +1,314 @@
+/*
+  Tela Mercado (detalhe) — mobile-first, reaproveitando as variáveis de
+  cor/sombra já definidas em src/index.css (--accent, --border, --text,
+  --text-h, --bg, --accent-bg, --code-bg, --shadow) pra manter a mesma
+  identidade visual de Home/Lista/Explorar (Material Design 3 + Google Maps
+  + Notion + Apple).
+
+  Observação: ".bottom-nav" e ".badge-promocao" repetem as mesmas regras já
+  usadas em Home.css/Explorar.css — mesmos componentes reaproveitados aqui
+  para manter a consistência visual em todo o app.
+*/
+
+.mercado-detalhe-screen {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  /* Espaço reservado pra barra de navegação inferior fixa não cobrir o
+     último produto da lista. */
+  padding-bottom: 76px;
+}
+
+/* ---------- Topo ---------- */
+
+.mercado-detalhe-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 4px;
+}
+
+.mercado-detalhe-voltar {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.mercado-detalhe-voltar:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.mercado-detalhe-topbar-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+/* Botão de favoritar — neutro quando inativo (não compete com o botão de
+   rota, que é a ação primária da tela); quando ativo, usa a cor de destaque
+   para confirmar visualmente a escolha, mesmo princípio dos chips de filtro
+   do Explorar. */
+.mercado-detalhe-favorito {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.mercado-detalhe-favorito.is-ativo {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- Conteúdo ---------- */
+
+.mercado-detalhe-content {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 8px 20px 12px;
+}
+
+/* ---------- Erro ----------
+   Mesmo estilo já usado em Explorar.css para manter consistência visual. */
+
+.mercado-detalhe-erro {
+  font-size: 13.5px;
+  color: #b42318;
+  background: #fef3f2;
+  border: 1px solid #fda29b;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+/* ---------- Cabeçalho: nome, bairro/distância, horário ---------- */
+
+.mercado-detalhe-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.mercado-detalhe-nome {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.3px;
+  color: var(--text-h);
+}
+
+.mercado-detalhe-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.mercado-detalhe-meta-separador {
+  opacity: 0.6;
+}
+
+.mercado-detalhe-horario {
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+/* ---------- Botão "Traçar rota" ----------
+   Ação de destaque da tela: largura total, cor --accent (mesma usada no
+   card de lista ativa da Home) e posição logo abaixo das informações
+   principais, para ficar fácil de alcançar com o polegar sem precisar
+   rolar a tela — é a ação que o README define como a principal métrica do
+   funil ("clique em rota"). */
+
+.mercado-detalhe-rota-botao {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 14px;
+  padding: 15px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  min-height: 48px;
+  transition: opacity 0.15s ease, transform 0.05s ease;
+}
+
+.mercado-detalhe-rota-botao:hover {
+  opacity: 0.94;
+}
+
+.mercado-detalhe-rota-botao:active {
+  transform: scale(0.99);
+}
+
+/* ---------- Lista de produtos ---------- */
+
+.mercado-detalhe-produtos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.mercado-detalhe-secao-titulo {
+  margin: 0;
+  font-size: 17px;
+}
+
+.mercado-detalhe-secao-vazia {
+  font-size: 13.5px;
+  color: var(--text);
+  padding: 4px 0;
+}
+
+.mercado-detalhe-lista-produtos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-produto-mercado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.card-produto-mercado-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.card-produto-mercado-nome {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  line-height: 130%;
+}
+
+.card-produto-mercado-categoria {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.card-produto-mercado-direita {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-produto-mercado-preco {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-h);
+  white-space: nowrap;
+}
+
+/* Indicador de promoção ativa — mesmo estilo de "badge-promocao" já usado
+   em Home.css/Explorar.css, para manter o significado visual consistente
+   em todo o app (cor de destaque = tem promoção). */
+.badge-promocao {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+/* ---------- Barra de navegação inferior ----------
+   Mesma estrutura visual da Home/Lista/Explorar (ver observação no topo do
+   arquivo). */
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  z-index: 10;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  padding: 6px 4px;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.bottom-nav-item.is-active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.bottom-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.bottom-nav-label {
+  font-size: 11px;
+}
+
+/* ---------- Telas maiores ---------- */
+
+@media (min-width: 560px) {
+  .mercado-detalhe-content {
+    padding: 8px 32px 12px;
+  }
+}

@@ -32,10 +32,10 @@ import './Explorar.css'
  * mapa de verdade). Um mapa real (Google Maps/Mapbox) fica para uma etapa
  * futura — fora do escopo desta tela, que é validar lista + filtros primeiro.
  *
- * Clique num card de mercado: a tela de detalhe do mercado ainda não existe
- * (próxima etapa do MVP), então por enquanto só loga um TODO no console.
+ * Clique num card de mercado: agora navega para a tela "Mercado (detalhe)"
+ * (ver src/pages/MercadoDetalhe.jsx), via o callback onNavigateToMercado.
  */
-function Explorar({ onNavigateToHome, onNavigateToLista, onNavigateToPerfil }) {
+function Explorar({ onNavigateToHome, onNavigateToLista, onNavigateToPerfil, onNavigateToMercado }) {
   const [busca, setBusca] = useState('')
   const [filtroProximos, setFiltroProximos] = useState(false)
   const [filtroPromocao, setFiltroPromocao] = useState(false)
@@ -117,9 +117,8 @@ function Explorar({ onNavigateToHome, onNavigateToLista, onNavigateToPerfil }) {
     window.alert('Mapa ainda não disponível nesta versão. Em breve!')
   }
 
-  function handleAbrirMercadoPlaceholder() {
-    // A tela de detalhe do mercado ainda não existe (próxima etapa do MVP).
-    console.log('[Explorar] TODO: navegar para Mercado (detalhe)')
+  function handleAbrirMercado(mercadoId) {
+    onNavigateToMercado?.(mercadoId)
   }
 
   return (
@@ -209,7 +208,7 @@ function Explorar({ onNavigateToHome, onNavigateToLista, onNavigateToPerfil }) {
                 <button
                   type="button"
                   className="card-mercado-explorar"
-                  onClick={handleAbrirMercadoPlaceholder}
+                  onClick={() => handleAbrirMercado(mercado.id)}
                 >
                   <div className="card-mercado-explorar-info">
                     <span className="card-mercado-explorar-nome">{mercado.nome}</span>
