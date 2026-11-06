@@ -1,0 +1,178 @@
+/*
+  Estilos compartilhados para formulários de autenticação (Login e Cadastro).
+  Inspirado em Material Design 3 (campos "outlined", raio de borda generoso,
+  estados de foco com a cor de destaque do projeto) + minimalismo Apple/Notion
+  (bastante espaço em branco, sem bordas pesadas, hierarquia por tamanho/peso).
+
+  Reaproveita as variáveis definidas em src/index.css (--accent, --border,
+  --text, --text-h, --bg) para manter uma única fonte de cores no projeto,
+  incluindo o suporte a dark mode que já existe lá.
+*/
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+  letter-spacing: 0.1px;
+}
+
+.field-input {
+  font: inherit;
+  font-size: 16px; /* >=16px evita zoom automático no iOS ao focar */
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  min-height: 48px; /* alvo de toque confortável */
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field-input::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.field-hint {
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.8;
+}
+
+/* Botão de ação principal (CTA): grande, fácil de alcançar com o polegar,
+   sempre com a mesma largura dos campos para parecer parte do mesmo grupo. */
+.btn-primary {
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  min-height: 50px;
+  border: none;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.05s ease;
+}
+
+.btn-primary:hover {
+  opacity: 0.92;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Divisor "ou continue com" entre o login por e-mail e os sociais */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  font-size: 13px;
+  margin: 4px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Checkbox customizado, mas acessível (input nativo por baixo, só escondido
+   visualmente) — reaproveitado nos dois checkboxes do Cadastro. */
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13.5px;
+  line-height: 140%;
+  color: var(--text);
+}
+
+.checkbox-row input[type='checkbox'] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.checkbox-row input[type='checkbox']:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.checkbox-row input[type='checkbox']:checked::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-row input[type='checkbox']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.checkbox-row a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.forgot-link {
+  align-self: flex-end;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.form-error {
+  font-size: 13px;
+  color: #d33b3b;
+  text-align: left;
+}

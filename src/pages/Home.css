@@ -1,0 +1,361 @@
+/*
+  Tela Home — mobile-first, reaproveitando as variáveis de cor/sombra já
+  definidas em src/index.css (--accent, --border, --text, --text-h, --bg,
+  --shadow, --code-bg) pra manter a mesma identidade visual do fluxo de
+  Login/Cadastro (Material Design 3 + Google Maps + Notion + Apple).
+*/
+
+.home-screen {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  /* Espaço reservado pra barra de navegação inferior fixa não cobrir o
+     último card da lista de promoções. */
+  padding-bottom: 76px;
+}
+
+/* ---------- Topo ---------- */
+
+.home-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 12px;
+}
+
+.home-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.home-brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.home-greeting {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.home-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text-h);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+/* ---------- Layout geral do conteúdo ---------- */
+
+.home-content {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 4px 20px 12px;
+}
+
+.home-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.home-section-title {
+  font-size: 17px;
+  margin: 0;
+  text-align: left;
+}
+
+.link-ver-todos {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* ---------- 1. Card de lista de compras ativa ----------
+   É a ação mais frequente do usuário (ver o que falta comprar), por isso
+   recebe a cor de destaque do app (--accent) em vez do estilo neutro dos
+   outros cards — o olho vai direto pra ela ao abrir o app. */
+
+.card-lista-ativa {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  border: none;
+  border-radius: 20px;
+  padding: 20px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: opacity 0.15s ease, transform 0.05s ease;
+}
+
+.card-lista-ativa:hover {
+  opacity: 0.94;
+}
+
+.card-lista-ativa:active {
+  transform: scale(0.99);
+}
+
+.card-lista-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-lista-label {
+  font-size: 12.5px;
+  opacity: 0.85;
+}
+
+.card-lista-nome {
+  margin: 0;
+  font-size: 18px;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+
+.card-lista-progresso {
+  font-size: 13.5px;
+  opacity: 0.9;
+}
+
+.card-lista-seta {
+  font-size: 22px;
+  flex: 0 0 auto;
+}
+
+/* ---------- 2. Mercados próximos (cards horizontais) ----------
+   Rolagem lateral em vez de lista vertical: é um padrão comum em apps de
+   descoberta por proximidade (ex: Google Maps) e evita competir em altura
+   de tela com o card de lista, que é a prioridade #1. */
+
+.mercados-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  /* Esconde a barra de scroll (mobile já rola por gesto; desktop ainda rola
+     com o mouse/trackpad) pra não parecer um componente "de formulário". */
+  scrollbar-width: none;
+}
+
+.mercados-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.card-mercado {
+  flex: 0 0 auto;
+  width: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  text-align: left;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.card-mercado:hover {
+  border-color: var(--accent);
+}
+
+.badge-promocao {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
+.card-mercado-nome {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 130%;
+}
+
+.card-mercado-distancia {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+/* Mensagem de erro simples no topo do conteúdo (ex: falha ao carregar do
+   Supabase), e mensagem amigável para seções que vieram vazias (ex: ainda
+   não existe mercado parceiro cadastrado). */
+
+.home-erro {
+  font-size: 13.5px;
+  color: #b42318;
+  background: #fef3f2;
+  border: 1px solid #fda29b;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 4px;
+}
+
+.home-secao-vazia {
+  font-size: 13.5px;
+  color: var(--text);
+  padding: 4px 0;
+}
+
+/* ---------- 3. Promoções em destaque (lista vertical de produtos) ----------
+   Fica por último porque é conteúdo de "exploração", não uma tarefa
+   pendente — o usuário rola até aqui quando já resolveu o essencial. */
+
+.promocoes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-promocao {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 12px;
+  text-align: left;
+}
+
+.card-promocao-imagem {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: var(--code-bg);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-promocao-info {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.card-promocao-nome {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-h);
+  line-height: 130%;
+}
+
+.card-promocao-mercado {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.card-promocao-preco {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-h);
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ---------- Barra de navegação inferior ----------
+   Fixa na base da tela (mobile-first): é onde o polegar alcança com mais
+   facilidade em um celular, por isso os 4 destinos mínimos do app do
+   consumidor (Home, Lista, Explorar, Perfil) ficam ali, sempre visíveis. */
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  /* Fica acima do conteúdo, mas abaixo de qualquer modal futuro. */
+  z-index: 10;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  padding: 6px 4px;
+  cursor: pointer;
+  /* Alvo de toque confortável mesmo com conteúdo pequeno dentro. */
+  min-height: 48px;
+}
+
+.bottom-nav-item.is-active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.bottom-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.bottom-nav-label {
+  font-size: 11px;
+}
+
+/* ---------- Telas maiores ----------
+   O app continua "mobile" na estrutura (sem sidebar nova, sem navegação
+   fora do escopo do MVP), só ganha respiro: conteúdo centralizado com
+   largura máxima e cards de mercado um pouco maiores. */
+
+@media (min-width: 560px) {
+  .home-content {
+    padding: 4px 32px 12px;
+  }
+
+  .card-mercado {
+    width: 180px;
+  }
+}

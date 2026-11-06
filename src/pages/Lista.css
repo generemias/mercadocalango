@@ -1,0 +1,308 @@
+/*
+  Tela Lista de compras — mobile-first, reaproveitando as variáveis de
+  cor/sombra já definidas em src/index.css (--accent, --border, --text,
+  --text-h, --bg, --accent-bg, --code-bg) pra manter a mesma identidade
+  visual da Home e do fluxo de Login/Cadastro (Material Design 3 + Google
+  Maps + Notion + Apple).
+
+  Observação: as regras de ".bottom-nav" abaixo são as mesmas da Home.css
+  (mesma barra de navegação inferior reaproveitada nas duas telas). Hoje
+  cada página tem seu próprio arquivo CSS, então a regra é repetida aqui de
+  propósito; se o projeto crescer, vale mover ".bottom-nav" para um arquivo
+  CSS compartilhado (ex: src/styles/bottom-nav.css) importado pelas duas
+  telas, em vez de manter duas cópias.
+*/
+
+.lista-screen {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  /* Espaço reservado pra barra de navegação inferior fixa não cobrir o
+     último item da lista. */
+  padding-bottom: 76px;
+}
+
+/* ---------- Topo ---------- */
+
+.lista-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 4px;
+}
+
+.lista-titulo {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.3px;
+  color: var(--text-h);
+}
+
+.lista-seletor-label {
+  flex: 0 0 auto;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Select nativo: deixa o sistema abrir o picker (bom no celular) e só
+   herda a mesma linguagem visual dos campos de formulário (borda
+   arredondada, cor de foco igual à de Login/Cadastro). */
+.lista-seletor {
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  max-width: 160px;
+  cursor: pointer;
+}
+
+.lista-seletor:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* ---------- Conteúdo ---------- */
+
+.lista-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 20px 12px;
+}
+
+.lista-progresso {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* ---------- Adicionar item ----------
+   Fica fixo no topo do conteúdo (não no fim da lista) porque é a ação mais
+   repetida nesta tela — o usuário não deveria precisar rolar pra adicionar
+   um item novo. */
+
+.lista-adicionar {
+  display: flex;
+  gap: 8px;
+}
+
+.lista-adicionar-input {
+  flex: 1 1 auto;
+  font: inherit;
+  font-size: 16px; /* >=16px evita zoom automático no iOS ao focar */
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  min-height: 48px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lista-adicionar-input::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.lista-adicionar-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.lista-adicionar-botao {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.05s ease;
+}
+
+.lista-adicionar-botao:hover {
+  opacity: 0.94;
+}
+
+.lista-adicionar-botao:active {
+  transform: scale(0.96);
+}
+
+/* ---------- Lista de itens ---------- */
+
+.lista-itens {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lista-vazia {
+  font-size: 13.5px;
+  color: var(--text);
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* Mensagem de erro simples (ex: falha ao carregar/salvar no Supabase). */
+.lista-erro {
+  font-size: 13.5px;
+  color: #b42318;
+  background: #fef3f2;
+  border: 1px solid #fda29b;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 12px;
+}
+
+.lista-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 4px 6px 4px 4px;
+}
+
+/* Botão que ocupa a linha inteira do item — alvo de toque grande pra
+   marcar como comprado, fácil de alcançar com o polegar. */
+.lista-item-toque {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  border: none;
+  background: none;
+  padding: 10px 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lista-item-checkbox {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.lista-item-checkbox.is-marcado {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.lista-item-nome {
+  font-size: 14.5px;
+  color: var(--text-h);
+  line-height: 135%;
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* Item marcado como comprado: fica riscado e esmaecido, mas continua
+   visível na lista (não some) — assim o usuário consegue desfazer com um
+   toque se tiver marcado por engano. */
+.lista-item.is-comprado .lista-item-nome {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.lista-item-remover {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.lista-item-remover:hover {
+  background: var(--code-bg);
+}
+
+/* ---------- Barra de navegação inferior ----------
+   Mesma estrutura visual da Home (ver observação no topo do arquivo). */
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  z-index: 10;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  padding: 6px 4px;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.bottom-nav-item.is-active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.bottom-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.bottom-nav-label {
+  font-size: 11px;
+}
+
+/* ---------- Telas maiores ---------- */
+
+@media (min-width: 560px) {
+  .lista-content {
+    padding: 8px 32px 12px;
+  }
+}
