@@ -7,6 +7,7 @@ import Home from './pages/Home'
 import Lista from './pages/Lista'
 import Explorar from './pages/Explorar'
 import MercadoDetalhe from './pages/MercadoDetalhe'
+import Perfil from './pages/Perfil'
 import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
 
 /**
@@ -98,9 +99,7 @@ function App() {
       <Lista
         onNavigateToHome={() => setTela('home')}
         onNavigateToExplorar={() => setTela('explorar')}
-        // TODO: Perfil ainda não existe (próxima etapa do MVP) — por isso
-        // esse callback só fica registrado aqui, sem tela de destino.
-        onNavigateToPerfil={() => console.log('[Lista] TODO: navegar para Perfil')}
+        onNavigateToPerfil={() => setTela('perfil')}
       />
     )
   }
@@ -113,9 +112,7 @@ function App() {
         onNavigateToHome={() => setTela('home')}
         onNavigateToLista={() => setTela('lista')}
         onNavigateToExplorar={() => setTela('explorar')}
-        // TODO: Perfil ainda não existe (próxima etapa do MVP) — por isso
-        // esse callback só fica registrado aqui, sem tela de destino.
-        onNavigateToPerfil={() => console.log('[MercadoDetalhe] TODO: navegar para Perfil')}
+        onNavigateToPerfil={() => setTela('perfil')}
       />
     )
   }
@@ -129,9 +126,26 @@ function App() {
           setMercadoSelecionadoId(mercadoId)
           setTela('mercado-detalhe')
         }}
-        // TODO: Perfil ainda não existe (próxima etapa do MVP) — por isso
-        // esse callback só fica registrado aqui, sem tela de destino.
-        onNavigateToPerfil={() => console.log('[Explorar] TODO: navegar para Perfil')}
+        onNavigateToPerfil={() => setTela('perfil')}
+      />
+    )
+  }
+
+  if (tela === 'perfil') {
+    return (
+      <Perfil
+        onNavigateToHome={() => setTela('home')}
+        onNavigateToLista={() => setTela('lista')}
+        onNavigateToExplorar={() => setTela('explorar')}
+        onNavigateToMercado={(mercadoId) => {
+          setMercadoSelecionadoId(mercadoId)
+          setTela('mercado-detalhe')
+        }}
+        // Perfil.jsx já chama supabase.auth.signOut() de verdade antes de
+        // avisar este callback. A troca de volta para 'login' é feita pelo
+        // próprio listener onAuthStateChange (ver useEffect acima), então
+        // aqui não precisa fazer nada além de aceitar o aviso.
+        onSair={() => {}}
       />
     )
   }
@@ -141,9 +155,7 @@ function App() {
       <Home
         onNavigateToLista={() => setTela('lista')}
         onNavigateToExplorar={() => setTela('explorar')}
-        // TODO: Perfil ainda não existe (próxima etapa do MVP) — por isso
-        // esse callback só fica registrado aqui, sem tela de destino.
-        onNavigateToPerfil={() => console.log('[Home] TODO: navegar para Perfil')}
+        onNavigateToPerfil={() => setTela('perfil')}
       />
     )
   }

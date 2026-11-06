@@ -1,0 +1,342 @@
+/*
+  Tela Perfil — mobile-first, reaproveitando as variáveis de cor/sombra já
+  definidas em src/index.css (--accent, --border, --text, --text-h, --bg,
+  --shadow, --code-bg) e os estilos de campo/botão de src/styles/forms.css
+  (.field / .field-label / .field-input / .btn-primary), pra manter a mesma
+  identidade visual das outras telas (Home/Lista/Explorar/MercadoDetalhe).
+
+  Observação: ".bottom-nav" é a mesma regra repetida em Home.css/Explorar.css
+  (ainda sem CSS global compartilhado entre telas — ver observação igual em
+  Explorar.css). Reaproveitada aqui 1:1 para não divergir visualmente.
+*/
+
+.perfil-screen {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  /* Espaço reservado pra barra de navegação inferior fixa não cobrir o
+     botão "Sair". */
+  padding-bottom: 76px;
+}
+
+/* ---------- Topo ---------- */
+
+.perfil-topbar {
+  padding: 20px 20px 12px;
+}
+
+.perfil-titulo {
+  margin: 0;
+  font-size: 22px;
+  text-align: left;
+}
+
+/* ---------- Layout geral do conteúdo ---------- */
+
+.perfil-content {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 4px 20px 12px;
+}
+
+.perfil-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.perfil-section-title {
+  font-size: 17px;
+  margin: 0;
+  text-align: left;
+}
+
+.perfil-section-nota {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--code-bg);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.perfil-secao-vazia {
+  font-size: 13.5px;
+  color: var(--text);
+  text-align: left;
+  padding: 4px 0;
+}
+
+/* ---------- 1. Card de dados pessoais ----------
+   Mesmo tratamento visual (borda + raio + espaçamento) dos outros cards do
+   app, mas sem a cor de destaque sólida — aqui não é uma ação recorrente
+   como a lista de compras na Home, é informação. */
+
+.perfil-card {
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  text-align: left;
+}
+
+.perfil-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.perfil-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.perfil-editar-botao {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 6px 2px;
+  cursor: pointer;
+  /* Alvo de toque confortável mesmo sendo um link de texto. */
+  min-height: 32px;
+}
+
+.perfil-dados {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.perfil-nome {
+  margin: 0;
+  font-size: 18px;
+}
+
+.perfil-local {
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+/* Formulário de edição — reaproveita .field/.field-label/.field-input de
+   forms.css (mesmo visual dos campos de Cadastro.jsx), só com espaçamento
+   menor por estar dentro de um card em vez de ocupar a tela toda. */
+
+.perfil-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.perfil-form-acoes {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.perfil-salvar-botao {
+  flex: 1;
+  min-height: 46px;
+  font-size: 15px;
+}
+
+.btn-secundario {
+  flex: 1;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 46px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.btn-secundario:hover {
+  border-color: var(--accent);
+}
+
+.btn-secundario:active {
+  opacity: 0.85;
+}
+
+/* ---------- 2. Histórico (primeira versão) ----------
+   Um único número grande em destaque — deliberadamente simples (ver
+   comentário no topo de Perfil.jsx: não existe ainda histórico de compras
+   confirmadas no schema, só uma contagem de itens marcados como comprados).
+   A etiqueta "primeira versão" ao lado do título deixa isso claro na
+   própria tela, sem precisar de texto explicativo mais longo. */
+
+.perfil-historico-card {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.perfil-historico-numero {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-h);
+  line-height: 1;
+}
+
+.perfil-historico-label {
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+/* ---------- 3. Mercados favoritos ----------
+   Mesmo card de mercado (nome + bairro) já usado em Explorar.jsx, pra não
+   criar um terceiro jeito visual de representar "um mercado" no app. */
+
+.perfil-lista-favoritos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-mercado-favorito {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.card-mercado-favorito:hover {
+  border-color: var(--accent);
+}
+
+.card-mercado-favorito-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.card-mercado-favorito-nome {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 130%;
+}
+
+.card-mercado-favorito-local {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.card-mercado-favorito-seta {
+  font-size: 18px;
+  flex: 0 0 auto;
+  color: var(--text);
+}
+
+/* ---------- 4. Sair ----------
+   Fica sozinho ao final, fora do grupo visual dos outros cards (sem borda),
+   pra não competir com as informações do perfil nem parecer uma ação
+   "igual as outras" — é separada de propósito, mas sem o vermelho forte de
+   um alerta de erro: sair da conta não é uma ação destrutiva. */
+
+.perfil-section-sair {
+  margin-top: 4px;
+  display: flex;
+  justify-content: center;
+}
+
+.perfil-sair-botao {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #d33b3b;
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.perfil-sair-botao:hover {
+  opacity: 0.8;
+}
+
+/* ---------- Barra de navegação inferior ---------- */
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  z-index: 10;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  padding: 6px 4px;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.bottom-nav-item.is-active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.bottom-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.bottom-nav-label {
+  font-size: 11px;
+}
+
+/* ---------- Telas maiores ---------- */
+
+@media (min-width: 560px) {
+  .perfil-content {
+    padding: 4px 32px 12px;
+  }
+}
