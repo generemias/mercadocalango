@@ -80,6 +80,23 @@ function MercadoDetalhe({
 
     setMercado(mercadoData)
 
+    // Usuário autenticado: reaproveitado tanto para registrar a
+    // visualização (telemetria do dashboard do mercado) quanto para checar
+    // o favorito mais abaixo, em vez de chamar getUser() duas vezes.
+    const { data: userData } = await supabase.auth.getUser()
+
+    // Registro de visualização do mercado (market_views), usado pelo
+    // Dashboard do mercado (DashboardMercado.jsx). É telemetria: "fire and
+    // forget", não bloqueia o carregamento da tela e não mostra erro ao
+    // usuário se falhar.
+    if (userData?.user) {
+      supabase
+        .from('market_views')
+        .insert({ market_id: mercadoId, consumer_id: userData.user.id })
+        .then(() => {})
+        .catch(() => {})
+    }
+
     // Produtos do mercado, com a mesma lógica de "tem promoção ativa" já
     // usada em Explorar.jsx: promocao_validade_fim preenchida e no futuro.
     const agora = new Date().toISOString()
@@ -101,7 +118,6 @@ function MercadoDetalhe({
 
     // Estado inicial do favorito: só existe se o usuário logado já tiver
     // favoritado este mercado antes.
-    const { data: userData } = await supabase.auth.getUser()
     if (userData?.user) {
       const { data: favoritoData } = await supabase
         .from('favorite_markets')
@@ -154,6 +170,21 @@ function MercadoDetalhe({
   }
 
   function handleTracarRota() {
+    // Registro de clique em "Traçar rota" (market_route_clicks), usado pelo
+    // Dashboard do mercado. O clique em si já é o sinal de interesse, então
+    // registramos nos dois casos (com ou sem coordenadas cadastradas).
+    // Telemetria: "fire and forget", não trava o botão nem mostra erro ao
+    // usuário se falhar.
+    supabase.auth
+      .getUser()
+      .then(({ data: userData }) => {
+        if (!userData?.user) return
+        return supabase
+          .from('market_route_clicks')
+          .insert({ market_id: mercadoId, consumer_id: userData.user.id })
+      })
+      .catch(() => {})
+
     // Decisão de design: em vez de um mapa embutido (fora do escopo desta
     // etapa — igual ao botão "Ver no mapa" do Explorar), o botão abre o
     // Google Maps em uma nova aba já com a rota até o mercado, usando

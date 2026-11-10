@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import BuscaProdutos from './BuscaProdutos'
 import './Explorar.css'
 
 /**
@@ -34,8 +35,27 @@ import './Explorar.css'
  *
  * Clique num card de mercado: agora navega para a tela "Mercado (detalhe)"
  * (ver src/pages/MercadoDetalhe.jsx), via o callback onNavigateToMercado.
+ *
+ * Aba "Mercados" / "Produtos": o CEO pediu uma busca por PRODUTO (em todos
+ * os mercados parceiros, não só por nome de mercado) para alimentar a
+ * métrica "produtos mais buscados pelos clientes" do dashboard do mercado.
+ * Em vez de criar uma tela nova (ou um campo na Home), ela entra aqui como
+ * uma segunda aba, porque busca de produto é a mesma "intenção" de busca de
+ * mercado — descoberta, não tarefa pendente — e assim reaproveita o mesmo
+ * campo de busca e o mesmo lugar na navegação (ver explicação completa no
+ * topo de BuscaProdutos.jsx, o componente que implementa essa aba).
  */
-function Explorar({ onNavigateToHome, onNavigateToLista, onNavigateToPerfil, onNavigateToMercado }) {
+function Explorar({
+  onNavigateToHome,
+  onNavigateToLista,
+  onNavigateToPerfil,
+  onNavigateToMercado,
+  // Permite chegar nesta tela já na aba "Produtos" (ex: atalho "Buscar
+  // produtos" na Home — ver Home.jsx e o App.jsx, que guarda qual aba abrir
+  // igual já faz hoje com mercadoSelecionadoId para a tela de detalhe).
+  abaInicial = 'mercados',
+}) {
+  const [aba, setAba] = useState(abaInicial) // 'mercados' | 'produtos'
   const [busca, setBusca] = useState('')
   const [filtroProximos, setFiltroProximos] = useState(false)
   const [filtroPromocao, setFiltroPromocao] = useState(false)
@@ -135,92 +155,123 @@ function Explorar({ onNavigateToHome, onNavigateToLista, onNavigateToPerfil, onN
       </header>
 
       <main className="explorar-content">
-        {/* Busca por nome */}
-        <div className="explorar-busca">
-          <span className="explorar-busca-icone" aria-hidden="true">
-            ⚲
-          </span>
-          <input
-            type="text"
-            className="explorar-busca-input"
-            placeholder="Buscar mercado pelo nome"
-            value={busca}
-            onChange={(event) => setBusca(event.target.value)}
-            aria-label="Buscar mercado pelo nome"
-          />
-        </div>
-
-        {/* Filtros simples (chips de toggle) */}
-        <div className="explorar-filtros" role="group" aria-label="Filtros">
+        {/* Seletor de abas: "Mercados" (busca original, por nome de
+            mercado) e "Produtos" (busca nova, por nome de produto em todos
+            os mercados parceiros). Segmented control simples (2 opções),
+            no mesmo espírito dos chips de filtro já usados nesta tela. */}
+        <div className="explorar-abas" role="tablist" aria-label="Tipo de busca">
           <button
             type="button"
-            className={`chip-filtro${filtroProximos ? ' is-ativo' : ''}`}
-            aria-pressed={filtroProximos}
-            onClick={() => setFiltroProximos((atual) => !atual)}
+            role="tab"
+            aria-selected={aba === 'mercados'}
+            className={`explorar-aba${aba === 'mercados' ? ' is-ativa' : ''}`}
+            onClick={() => setAba('mercados')}
           >
-            Mais próximos
+            Mercados
           </button>
           <button
             type="button"
-            className={`chip-filtro${filtroPromocao ? ' is-ativo' : ''}`}
-            aria-pressed={filtroPromocao}
-            onClick={() => setFiltroPromocao((atual) => !atual)}
+            role="tab"
+            aria-selected={aba === 'produtos'}
+            className={`explorar-aba${aba === 'produtos' ? ' is-ativa' : ''}`}
+            onClick={() => setAba('produtos')}
           >
-            Com promoção
+            Produtos
           </button>
         </div>
 
-        {erro && (
-          <p className="explorar-erro" role="alert">
-            {erro}
-          </p>
-        )}
-
-        {/* Lista de mercados */}
-        {carregando ? (
-          <p className="explorar-secao-vazia">Carregando...</p>
-        ) : mercadosFiltrados.length === 0 ? (
-          <div className="explorar-vazio">
-            {mercados.length === 0 ? (
-              <>
-                <p className="explorar-vazio-titulo">
-                  Nenhum mercado parceiro por aqui ainda.
-                </p>
-                <p className="explorar-vazio-texto">
-                  Estamos recrutando mercados do seu bairro. Volte em breve!
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="explorar-vazio-titulo">
-                  Nenhum mercado encontrado.
-                </p>
-                <p className="explorar-vazio-texto">
-                  Tente outro termo de busca ou remova os filtros ativos.
-                </p>
-              </>
-            )}
-          </div>
+        {aba === 'produtos' ? (
+          <BuscaProdutos onNavigateToMercado={handleAbrirMercado} />
         ) : (
-          <ul className="explorar-lista">
-            {mercadosFiltrados.map((mercado) => (
-              <li key={mercado.id}>
-                <button
-                  type="button"
-                  className="card-mercado-explorar"
-                  onClick={() => handleAbrirMercado(mercado.id)}
-                >
-                  <div className="card-mercado-explorar-info">
-                    <span className="card-mercado-explorar-nome">{mercado.nome}</span>
-                    <span className="card-mercado-explorar-local">{mercado.bairro}</span>
-                  </div>
-                  {mercado.temPromocao && (
-                    <span className="badge-promocao">Promoção</span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            {/* Busca por nome de mercado */}
+            <div className="explorar-busca">
+              <span className="explorar-busca-icone" aria-hidden="true">
+                ⚲
+              </span>
+              <input
+                type="text"
+                className="explorar-busca-input"
+                placeholder="Buscar mercado pelo nome"
+                value={busca}
+                onChange={(event) => setBusca(event.target.value)}
+                aria-label="Buscar mercado pelo nome"
+              />
+            </div>
+
+            {/* Filtros simples (chips de toggle) */}
+            <div className="explorar-filtros" role="group" aria-label="Filtros">
+              <button
+                type="button"
+                className={`chip-filtro${filtroProximos ? ' is-ativo' : ''}`}
+                aria-pressed={filtroProximos}
+                onClick={() => setFiltroProximos((atual) => !atual)}
+              >
+                Mais próximos
+              </button>
+              <button
+                type="button"
+                className={`chip-filtro${filtroPromocao ? ' is-ativo' : ''}`}
+                aria-pressed={filtroPromocao}
+                onClick={() => setFiltroPromocao((atual) => !atual)}
+              >
+                Com promoção
+              </button>
+            </div>
+
+            {erro && (
+              <p className="explorar-erro" role="alert">
+                {erro}
+              </p>
+            )}
+
+            {/* Lista de mercados */}
+            {carregando ? (
+              <p className="explorar-secao-vazia">Carregando...</p>
+            ) : mercadosFiltrados.length === 0 ? (
+              <div className="explorar-vazio">
+                {mercados.length === 0 ? (
+                  <>
+                    <p className="explorar-vazio-titulo">
+                      Nenhum mercado parceiro por aqui ainda.
+                    </p>
+                    <p className="explorar-vazio-texto">
+                      Estamos recrutando mercados do seu bairro. Volte em breve!
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="explorar-vazio-titulo">
+                      Nenhum mercado encontrado.
+                    </p>
+                    <p className="explorar-vazio-texto">
+                      Tente outro termo de busca ou remova os filtros ativos.
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <ul className="explorar-lista">
+                {mercadosFiltrados.map((mercado) => (
+                  <li key={mercado.id}>
+                    <button
+                      type="button"
+                      className="card-mercado-explorar"
+                      onClick={() => handleAbrirMercado(mercado.id)}
+                    >
+                      <div className="card-mercado-explorar-info">
+                        <span className="card-mercado-explorar-nome">{mercado.nome}</span>
+                        <span className="card-mercado-explorar-local">{mercado.bairro}</span>
+                      </div>
+                      {mercado.temPromocao && (
+                        <span className="badge-promocao">Promoção</span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </main>
 

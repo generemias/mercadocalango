@@ -214,6 +214,36 @@
   color: var(--text);
 }
 
+/* ---------- Atalho "Buscar produtos" ----------
+   Botão discreto (outline, sem --accent) logo abaixo dos mercados
+   próximos — leva para a aba "Produtos" da tela Explorar. Fica em estilo
+   neutro de propósito: não é a ação mais frequente da Home (essa é o card
+   de lista de compras, já em destaque no topo), é só um atalho a mais. */
+
+.home-buscar-produtos-botao {
+  width: 100%;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.home-buscar-produtos-botao:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* Mensagem de erro simples no topo do conteúdo (ex: falha ao carregar do
    Supabase), e mensagem amigável para seções que vieram vazias (ex: ainda
    não existe mercado parceiro cadastrado). */

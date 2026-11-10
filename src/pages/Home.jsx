@@ -22,6 +22,14 @@ import './Home.css'
  * não existe roteador real, quem usa este componente decide o que fazer ao
  * clicar — mesmo padrão de callbacks já usado em Login/Cadastro.
  *
+ * onNavigateToBuscarProdutos: atalho para a busca de PRODUTO (ver aba nova
+ * "Produtos" dentro da tela Explorar, em src/pages/BuscaProdutos.jsx).
+ * Decidimos não duplicar o campo de busca aqui na Home — ela é a tela de
+ * "o que eu preciso fazer agora" (lista de compras em destaque no topo), e
+ * um campo de busca de produto competiria visualmente com isso. Em vez
+ * disso, um link discreto leva direto para a aba certa em Explorar, que já
+ * é a tela de "descoberta" do app.
+ *
  * Integração com Supabase (substitui os dados de exemplo que existiam
  * aqui antes):
  * - Resumo da lista: reaproveita a mesma lógica da tela Lista.jsx (busca a
@@ -41,7 +49,7 @@ import './Home.css'
  *   e ainda não vencido. Também vem vazia até algum mercado cadastrar
  *   produtos em promoção — mesma lógica de mensagem amigável.
  */
-function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil }) {
+function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil, onNavigateToBuscarProdutos }) {
   // TODO: trocar pelo nome real do usuário logado (via perfil em
   // consumer_profiles) quando a tela de Perfil existir e essa informação
   // for necessária em mais lugares. Por enquanto a Home não depende disso
@@ -234,6 +242,18 @@ function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil }) {
               ))}
             </div>
           )}
+
+          {/* Atalho para a busca de produto (ver comentário no topo do
+              arquivo). Estilo discreto/outline — mesma lógica já usada no
+              botão "Ver no mapa" de Explorar.jsx: não é a ação principal da
+              tela, por isso não usa a cor de destaque (--accent). */}
+          <button
+            type="button"
+            className="home-buscar-produtos-botao"
+            onClick={onNavigateToBuscarProdutos}
+          >
+            <span aria-hidden="true">⚲</span> Buscar produtos em todos os mercados
+          </button>
         </section>
 
         {/* 3. Promoções em destaque */}

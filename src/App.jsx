@@ -28,6 +28,10 @@ function App() {
   // "trocador de tela" temporário). Quando houver rotas de verdade, isso
   // vira um parâmetro de rota (ex: /mercado/:id).
   const [mercadoSelecionadoId, setMercadoSelecionadoId] = useState(null)
+  // Qual aba abrir na tela Explorar ('mercados' ou 'produtos') — mesmo
+  // padrão temporário usado acima para mercadoSelecionadoId. Usado pelo
+  // atalho "Buscar produtos em todos os mercados" da Home.
+  const [abaExplorarInicial, setAbaExplorarInicial] = useState('mercados')
   // Enquanto checamos se já existe uma sessão salva pelo supabase-js (ele
   // guarda a sessão no localStorage por padrão), não sabemos ainda se o
   // usuário está logado. Sem esse estado, a tela de Login aparecia
@@ -41,10 +45,35 @@ function App() {
     }
 
     // Checagem inicial: se já existe uma sessão ativa salva, pula direto
-    // para a Home em vez de mostrar o Login de novo. Corrige o bug de F5 /
-    // reabrir a aba derrubar um usuário já logado para a tela de login.
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
+    // para a tela certa em vez de mostrar o Login de novo. Corrige o bug de
+    // F5 / reabrir a aba derrubar um usuário já logado para a tela de login.
+    //
+    // A sessão ativa pode ser de um consumidor OU de um lojista (painel do
+    // mercado) — o Supabase Auth é o mesmo para os dois, só market_profiles
+    // diferencia. Sem essa checagem, um lojista que recarregasse a página
+    // caía na Home do consumidor (que quebra: tenta carregar lista de
+    // compras/perfil de consumidor que não existem para essa conta). Mesma
+    // query já usada em LoginMercado.jsx e CadastroProdutos.jsx para saber
+    // se o id logado é de um mercado.
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) {
+        setVerificandoSessao(false)
+        return
+      }
+
+      const userId = data.session.user?.id
+      const { data: perfilMercado, error: erroPerfil } = await supabase
+        .from('market_profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle()
+
+      // Erro de rede/consulta: não trava ninguém, cai no comportamento
+      // padrão de sempre (Home do consumidor) — é só um detalhe de
+      // roteamento, sem precisar de mensagem de erro visível aqui.
+      if (!erroPerfil && perfilMercado) {
+        setTela('cadastro-produtos-mercado')
+      } else {
         setTela('home')
       }
       setVerificandoSessao(false)
@@ -148,7 +177,10 @@ function App() {
     return (
       <Lista
         onNavigateToHome={() => setTela('home')}
-        onNavigateToExplorar={() => setTela('explorar')}
+        onNavigateToExplorar={() => {
+          setAbaExplorarInicial('mercados')
+          setTela('explorar')
+        }}
         onNavigateToPerfil={() => setTela('perfil')}
       />
     )
@@ -161,7 +193,10 @@ function App() {
         onVoltar={() => setTela('explorar')}
         onNavigateToHome={() => setTela('home')}
         onNavigateToLista={() => setTela('lista')}
-        onNavigateToExplorar={() => setTela('explorar')}
+        onNavigateToExplorar={() => {
+          setAbaExplorarInicial('mercados')
+          setTela('explorar')
+        }}
         onNavigateToPerfil={() => setTela('perfil')}
       />
     )
@@ -170,6 +205,7 @@ function App() {
   if (tela === 'explorar') {
     return (
       <Explorar
+        abaInicial={abaExplorarInicial}
         onNavigateToHome={() => setTela('home')}
         onNavigateToLista={() => setTela('lista')}
         onNavigateToMercado={(mercadoId) => {
@@ -186,7 +222,10 @@ function App() {
       <Perfil
         onNavigateToHome={() => setTela('home')}
         onNavigateToLista={() => setTela('lista')}
-        onNavigateToExplorar={() => setTela('explorar')}
+        onNavigateToExplorar={() => {
+          setAbaExplorarInicial('mercados')
+          setTela('explorar')
+        }}
         onNavigateToMercado={(mercadoId) => {
           setMercadoSelecionadoId(mercadoId)
           setTela('mercado-detalhe')
@@ -204,8 +243,15 @@ function App() {
     return (
       <Home
         onNavigateToLista={() => setTela('lista')}
-        onNavigateToExplorar={() => setTela('explorar')}
+        onNavigateToExplorar={() => {
+          setAbaExplorarInicial('mercados')
+          setTela('explorar')
+        }}
         onNavigateToPerfil={() => setTela('perfil')}
+        onNavigateToBuscarProdutos={() => {
+          setAbaExplorarInicial('produtos')
+          setTela('explorar')
+        }}
       />
     )
   }

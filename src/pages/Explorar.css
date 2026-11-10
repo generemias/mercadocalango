@@ -68,6 +68,40 @@
   padding: 8px 20px 12px;
 }
 
+/* ---------- Seletor de abas (Mercados / Produtos) ----------
+   Segmented control de 2 opções: fundo neutro (--code-bg) com a aba ativa
+   em branco/destaque, padrão comum no Material Design 3 para alternar entre
+   dois modos dentro da mesma tela (em vez de dois botões soltos, que
+   pareceriam dois filtros em vez de duas "visões" diferentes da busca). */
+
+.explorar-abas {
+  display: flex;
+  gap: 4px;
+  background: var(--code-bg);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.explorar-aba {
+  flex: 1 1 0;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-radius: 9px;
+  padding: 9px 0;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.explorar-aba.is-ativa {
+  background: var(--bg);
+  color: var(--text-h);
+  box-shadow: var(--shadow);
+}
+
 /* ---------- Busca ---------- */
 
 .explorar-busca {
