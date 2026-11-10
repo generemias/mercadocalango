@@ -8,12 +8,12 @@ import './CadastroProdutos.css'
  * README.md, seção "Painel do mercado (mínimo)": "nome, categoria, preço,
  * imagem, validade da promoção").
  *
- * Por decisão do CEO, esta é a próxima etapa depois do Login do mercado
- * (src/pages/mercado/LoginMercado.jsx) — ainda não existe uma Home/dashboard
- * do painel, então esta tela funciona como o ponto de entrada principal do
- * lojista por enquanto. Quando o dashboard com métricas for construído
- * (próxima etapa, fora do escopo desta tarefa), esta tela deve virar um dos
- * destinos de navegação a partir dele, em vez de ser a tela inicial.
+ * Por decisão do CEO, esta era a próxima etapa depois do Login do mercado
+ * (src/pages/mercado/LoginMercado.jsx) e, por isso, continua sendo o ponto
+ * de entrada principal do lojista após o login. Agora que o Dashboard (ver
+ * src/pages/mercado/DashboardMercado.jsx) também existe, as duas telas
+ * ganharam uma barra de abas simples no cabeçalho (.mercado-tabs) para
+ * alternar entre "Produtos" e "Dashboard" sem precisar logar de novo.
  *
  * Integração real com Supabase (tabela `products`, ver schema: id,
  * market_id, nome, categoria, preco, imagem_url, promocao_validade_fim):
@@ -45,6 +45,9 @@ import './CadastroProdutos.css'
  *    consumidor (Home, Explorar, Perfil).
  *
  * Props:
+ * - onNavigateToDashboard: troca para a tela de Dashboard (ver
+ *   src/pages/mercado/DashboardMercado.jsx) — mesmo padrão de navegação por
+ *   callback já usado em todo o app.
  * - onSair: chamado depois do logout (mesmo padrão de callback de
  *   src/pages/Perfil.jsx) — quem usa este componente decide a próxima tela
  *   (hoje App.jsx volta para LoginMercado).
@@ -75,7 +78,7 @@ function promocaoEstaAtiva(dataIso) {
   return dataIso >= hojeIso
 }
 
-function CadastroProdutos({ onSair }) {
+function CadastroProdutos({ onNavigateToDashboard, onSair }) {
   const [marketId, setMarketId] = useState(null)
   const [marketNome, setMarketNome] = useState('')
   const [produtos, setProdutos] = useState([])
@@ -296,13 +299,24 @@ function CadastroProdutos({ onSair }) {
   return (
     <div className="mercado-screen">
       <header className="mercado-topbar">
-        <div className="mercado-topbar-info">
-          <span className="mercado-eyebrow">Painel do mercado parceiro</span>
-          <h1 className="mercado-nome">{marketNome || 'Seu mercado'}</h1>
+        <div className="mercado-topbar-top">
+          <div className="mercado-topbar-info">
+            <span className="mercado-eyebrow">Painel do mercado parceiro</span>
+            <h1 className="mercado-nome">{marketNome || 'Seu mercado'}</h1>
+          </div>
+          <button type="button" className="mercado-sair-botao" onClick={handleSair}>
+            Sair
+          </button>
         </div>
-        <button type="button" className="mercado-sair-botao" onClick={handleSair}>
-          Sair
-        </button>
+
+        <nav className="mercado-tabs" aria-label="Navegação do painel">
+          <button type="button" className="mercado-tab mercado-tab-ativa" aria-current="page">
+            Produtos
+          </button>
+          <button type="button" className="mercado-tab" onClick={onNavigateToDashboard}>
+            Dashboard
+          </button>
+        </nav>
       </header>
 
       <main className="mercado-content">

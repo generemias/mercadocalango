@@ -10,6 +10,7 @@ import MercadoDetalhe from './pages/MercadoDetalhe'
 import Perfil from './pages/Perfil'
 import LoginMercado from './pages/mercado/LoginMercado'
 import CadastroProdutos from './pages/mercado/CadastroProdutos'
+import DashboardMercado from './pages/mercado/DashboardMercado'
 import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
 
 /**
@@ -94,11 +95,10 @@ function App() {
         onNavigateToLoginConsumidor={() => setTela('login')}
         // LoginMercado.jsx já chama o Supabase de verdade e só dispara este
         // callback quando o login funcionou E existe uma linha em
-        // market_profiles para o usuário (ver comentários lá). A próxima
-        // tela do painel ainda não é um dashboard de verdade (isso fica para
-        // uma próxima etapa, por decisão do CEO) — por enquanto o cadastro
-        // de produtos/promoções serve como ponto de entrada principal do
-        // mercado logado.
+        // market_profiles para o usuário (ver comentários lá). Cadastro de
+        // produtos/promoções continua sendo o ponto de entrada principal do
+        // mercado logado; o Dashboard (DashboardMercado.jsx) é acessado a
+        // partir da aba no cabeçalho desta tela.
         onLoginSuccess={() => setTela('cadastro-produtos-mercado')}
       />
     )
@@ -107,6 +107,9 @@ function App() {
   if (tela === 'cadastro-produtos-mercado') {
     return (
       <CadastroProdutos
+        // Troca de aba dentro do painel do mercado (mesma sessão já logada,
+        // sem precisar passar pelo login de novo).
+        onNavigateToDashboard={() => setTela('dashboard-mercado')}
         // CadastroProdutos.jsx já chama supabase.auth.signOut() de verdade
         // antes de avisar este callback (mesmo padrão do onSair do
         // Perfil.jsx do consumidor). Diferente do consumidor, ainda não há
@@ -117,6 +120,17 @@ function App() {
         // TODO (desenvolvedor): se o painel do mercado ganhar mais telas,
         // vale revisar esse listener para saber diferenciar sessão de
         // consumidor vs. de mercado (ex: guardando o "tipo" de usuário).
+        onSair={() => setTela('login-mercado')}
+      />
+    )
+  }
+
+  if (tela === 'dashboard-mercado') {
+    return (
+      <DashboardMercado
+        // Mesmo padrão de troca de aba usado em CadastroProdutos acima.
+        onNavigateToProdutos={() => setTela('cadastro-produtos-mercado')}
+        // Mesmo padrão de logout de CadastroProdutos acima.
         onSair={() => setTela('login-mercado')}
       />
     )

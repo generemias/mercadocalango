@@ -1,0 +1,282 @@
+/*
+  Tela "Dashboard" do painel do mercado — mobile-first, reaproveitando as
+  mesmas variáveis de cor/sombra de src/index.css (--accent, --border, --text,
+  --text-h, --bg, --code-bg, --shadow) usadas em todo o app do consumidor e em
+  CadastroProdutos.css, para manter a mesma identidade visual (Material
+  Design 3 + Google Maps + Notion + Apple).
+
+  As classes .mercado-screen, .mercado-topbar*, .mercado-eyebrow,
+  .mercado-nome, .mercado-sair-botao, .mercado-tabs*, .mercado-content e
+  .mercado-secao-titulo são repetidas aqui de propósito, com os mesmos nomes e
+  valores de CadastroProdutos.css — mesmo padrão de duplicação já usado nesse
+  arquivo (ver comentário sobre .btn-secundario lá). Se o painel do mercado
+  ganhar uma terceira tela, vale extrair isso para um CSS compartilhado (ex:
+  src/styles/painel-mercado.css).
+*/
+
+.mercado-screen {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* ---------- Topo ---------- */
+
+.mercado-topbar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mercado-topbar-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mercado-topbar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  min-width: 0;
+}
+
+.mercado-eyebrow {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.mercado-nome {
+  margin: 0;
+  font-size: 19px;
+  letter-spacing: -0.2px;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mercado-sair-botao {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--code-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  min-height: 40px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.mercado-sair-botao:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- Abas "Produtos / Dashboard" ----------
+   Barra de abas simples no topo (não uma bottom-nav como no app do
+   consumidor) porque o painel do mercado é mais usado em desktop/tablet
+   pelo lojista no balcão — abas no topo são o padrão mais comum nesse
+   contexto (Notion, painéis administrativos em geral). */
+
+.mercado-tabs {
+  display: flex;
+  gap: 4px;
+  padding-top: 4px;
+  margin-top: -2px;
+}
+
+.mercado-tab {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  padding: 10px 4px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.mercado-tab:hover {
+  color: var(--text-h);
+}
+
+.mercado-tab-ativa,
+.mercado-tab-ativa:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Conteúdo ---------- */
+
+.mercado-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 20px 32px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.mercado-secao-titulo {
+  margin: 0;
+  font-size: 17px;
+  text-align: left;
+}
+
+/* ---------- Cards de métrica ---------- */
+
+.metricas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: left;
+  background: var(--bg);
+}
+
+.metric-card-icone {
+  font-size: 20px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.metric-card-valor {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text-h);
+  letter-spacing: -0.4px;
+  line-height: 1;
+}
+
+.metric-card-rotulo {
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 135%;
+}
+
+/* Estado vazio de cada métrica — substitui o número grande (ver comentário
+   em DashboardMercado.jsx sobre tratar cada card separadamente, em vez de
+   uma tela única de "sem dados"). Mesmo visual de borda tracejada do
+   .mercado-vazio já usado em CadastroProdutos.css, mas sem a borda (o card
+   já tem borda própria) para não duplicar moldura dentro do card. */
+.metric-card-vazio {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 140%;
+}
+
+/* ---------- Card "Produtos mais buscados" ---------- */
+
+.metric-card-ranking {
+  gap: 10px;
+}
+
+.metric-card-ranking-titulo {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.ranking-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ranking-posicao {
+  flex: 0 0 auto;
+  width: 26px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.ranking-nome {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Mesmo visual do selo de promoção já usado em CadastroProdutos.css
+   (.badge-promocao), para reforçar que é a mesma linguagem visual de
+   "contagem em destaque" em todo o painel. */
+.ranking-quantidade {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: 999px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.mercado-dashboard-nota {
+  font-size: 11.5px;
+  color: var(--text);
+  text-align: center;
+  padding-top: 4px;
+}
+
+/* ---------- Telas maiores ----------
+   Mesma decisão já registrada em CadastroProdutos.css: o painel do mercado
+   tende a ser mais usado em desktop/tablet, então o conteúdo centraliza com
+   largura máxima confortável em vez de esticar até a borda. */
+
+@media (min-width: 560px) {
+  .mercado-topbar {
+    padding: 24px 32px 0;
+  }
+
+  .mercado-content {
+    padding: 20px 32px 40px;
+  }
+}
+
+@media (max-width: 420px) {
+  /* Em telas bem estreitas, dois cards lado a lado apertam demais os
+     números grandes — empilha para manter a leitura "de relance". */
+  .metricas-grid {
+    grid-template-columns: 1fr;
+  }
+}

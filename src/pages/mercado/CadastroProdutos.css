@@ -18,11 +18,17 @@
 
 .mercado-topbar {
   display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mercado-topbar-top {
+  display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--border);
 }
 
 .mercado-topbar-info {
@@ -70,6 +76,44 @@
 .mercado-sair-botao:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* ---------- Abas "Produtos / Dashboard" ----------
+   Barra de abas simples no topo (não uma bottom-nav como no app do
+   consumidor) porque o painel do mercado é mais usado em desktop/tablet
+   pelo lojista no balcão — abas no topo são o padrão mais comum nesse
+   contexto (Notion, painéis administrativos em geral). Repetida em
+   DashboardMercado.css com os mesmos nomes/valores (ver comentário sobre
+   duplicação de CSS no topo deste arquivo). */
+
+.mercado-tabs {
+  display: flex;
+  gap: 4px;
+  padding-top: 4px;
+  margin-top: -2px;
+}
+
+.mercado-tab {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  padding: 10px 4px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.mercado-tab:hover {
+  color: var(--text-h);
+}
+
+.mercado-tab-ativa,
+.mercado-tab-ativa:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 /* ---------- Conteúdo ---------- */
@@ -289,7 +333,7 @@
 
 @media (min-width: 560px) {
   .mercado-topbar {
-    padding: 24px 32px;
+    padding: 24px 32px 0;
   }
 
   .mercado-content {
