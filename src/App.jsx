@@ -9,6 +9,7 @@ import Explorar from './pages/Explorar'
 import MercadoDetalhe from './pages/MercadoDetalhe'
 import Perfil from './pages/Perfil'
 import LoginMercado from './pages/mercado/LoginMercado'
+import CadastroProdutos from './pages/mercado/CadastroProdutos'
 import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
 
 /**
@@ -93,14 +94,30 @@ function App() {
         onNavigateToLoginConsumidor={() => setTela('login')}
         // LoginMercado.jsx já chama o Supabase de verdade e só dispara este
         // callback quando o login funcionou E existe uma linha em
-        // market_profiles para o usuário (ver comentários lá). Mas ainda não
-        // existe nenhuma tela do painel do mercado além do login (dashboard/
-        // cadastro de produtos ficam para uma próxima etapa, por decisão do
-        // CEO) — então por enquanto não há para onde navegar de verdade.
-        // PRÓXIMO PASSO (próxima etapa, não desta tarefa): criar a tela de
-        // dashboard do mercado e trocar este no-op por algo como
-        // `() => setTela('dashboard-mercado')`.
-        onLoginSuccess={() => {}}
+        // market_profiles para o usuário (ver comentários lá). A próxima
+        // tela do painel ainda não é um dashboard de verdade (isso fica para
+        // uma próxima etapa, por decisão do CEO) — por enquanto o cadastro
+        // de produtos/promoções serve como ponto de entrada principal do
+        // mercado logado.
+        onLoginSuccess={() => setTela('cadastro-produtos-mercado')}
+      />
+    )
+  }
+
+  if (tela === 'cadastro-produtos-mercado') {
+    return (
+      <CadastroProdutos
+        // CadastroProdutos.jsx já chama supabase.auth.signOut() de verdade
+        // antes de avisar este callback (mesmo padrão do onSair do
+        // Perfil.jsx do consumidor). Diferente do consumidor, ainda não há
+        // um listener dedicado para a sessão do mercado em App.jsx — o
+        // onAuthStateChange abaixo troca para 'login' (tela do consumidor)
+        // quando qualquer sessão sai, então aqui garantimos explicitamente a
+        // volta para a tela de login correta do mercado.
+        // TODO (desenvolvedor): se o painel do mercado ganhar mais telas,
+        // vale revisar esse listener para saber diferenciar sessão de
+        // consumidor vs. de mercado (ex: guardando o "tipo" de usuário).
+        onSair={() => setTela('login-mercado')}
       />
     )
   }
