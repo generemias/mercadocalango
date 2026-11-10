@@ -16,7 +16,12 @@ import '../styles/forms.css'
  * App.jsx faz isso com um simples useState; quando o projeto adicionar
  * roteamento, aqui entraria algo como navigate('/cadastro')).
  */
-function Login({ onNavigateToCadastro, onNavigateToEsqueciSenha, onLoginSuccess }) {
+function Login({
+  onNavigateToCadastro,
+  onNavigateToEsqueciSenha,
+  onLoginSuccess,
+  onNavigateToLoginMercado,
+}) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -91,12 +96,24 @@ function Login({ onNavigateToCadastro, onNavigateToEsqueciSenha, onLoginSuccess 
       title="Bem-vindo de volta"
       subtitle="Entre para ver sua lista e as promoções do seu bairro."
       footer={
-        <span>
-          Ainda não tem conta?{' '}
-          <button type="button" className="link" onClick={onNavigateToCadastro}>
-            Criar conta
-          </button>
-        </span>
+        <>
+          <span>
+            Ainda não tem conta?{' '}
+            <button type="button" className="link" onClick={onNavigateToCadastro}>
+              Criar conta
+            </button>
+          </span>
+          {/* Link discreto: o consumidor comum nunca precisa disso, então
+              fica separado do fluxo principal (fonte menor, abaixo), mas
+              ainda visível para o mercado parceiro que abrir o app por
+              engano. */}
+          <p className="auth-footer-secondary">
+            É um mercado parceiro?{' '}
+            <button type="button" className="link" onClick={onNavigateToLoginMercado}>
+              Entrar aqui
+            </button>
+          </p>
+        </>
       }
     >
       <form className="auth-form" onSubmit={handleSubmit} noValidate>

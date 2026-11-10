@@ -13,8 +13,12 @@ import './AuthLayout.css'
  * title / subtitle: cabeçalho da tela (ex: "Bem-vindo de volta").
  * children: o formulário específico de cada tela.
  * footer: o link de troca entre Login <-> Cadastro.
+ * eyebrow: selo pequeno opcional acima do título (ex: "Painel do mercado
+ * parceiro"), usado para deixar claro que a tela pertence ao painel do
+ * mercado e não ao app do consumidor — sem precisar de um visual totalmente
+ * diferente, já que é o mesmo produto/marca.
  */
-function AuthLayout({ title, subtitle, children, footer }) {
+function AuthLayout({ title, subtitle, children, footer, eyebrow }) {
   return (
     <div className="auth-screen">
       <div className="auth-card">
@@ -27,6 +31,7 @@ function AuthLayout({ title, subtitle, children, footer }) {
         </div>
 
         <header className="auth-header">
+          {eyebrow && <span className="auth-eyebrow">{eyebrow}</span>}
           <h1>{title}</h1>
           {subtitle && <p className="auth-subtitle">{subtitle}</p>}
         </header>

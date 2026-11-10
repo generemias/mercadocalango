@@ -8,6 +8,7 @@ import Lista from './pages/Lista'
 import Explorar from './pages/Explorar'
 import MercadoDetalhe from './pages/MercadoDetalhe'
 import Perfil from './pages/Perfil'
+import LoginMercado from './pages/mercado/LoginMercado'
 import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
 
 /**
@@ -83,6 +84,24 @@ function App() {
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <p>Carregando...</p>
       </div>
+    )
+  }
+
+  if (tela === 'login-mercado') {
+    return (
+      <LoginMercado
+        onNavigateToLoginConsumidor={() => setTela('login')}
+        // LoginMercado.jsx já chama o Supabase de verdade e só dispara este
+        // callback quando o login funcionou E existe uma linha em
+        // market_profiles para o usuário (ver comentários lá). Mas ainda não
+        // existe nenhuma tela do painel do mercado além do login (dashboard/
+        // cadastro de produtos ficam para uma próxima etapa, por decisão do
+        // CEO) — então por enquanto não há para onde navegar de verdade.
+        // PRÓXIMO PASSO (próxima etapa, não desta tarefa): criar a tela de
+        // dashboard do mercado e trocar este no-op por algo como
+        // `() => setTela('dashboard-mercado')`.
+        onLoginSuccess={() => {}}
+      />
     )
   }
 
@@ -165,6 +184,7 @@ function App() {
       onNavigateToCadastro={() => setTela('cadastro')}
       onNavigateToEsqueciSenha={() => setTela('esqueci-senha')}
       onLoginSuccess={() => setTela('home')}
+      onNavigateToLoginMercado={() => setTela('login-mercado')}
     />
   )
 }
