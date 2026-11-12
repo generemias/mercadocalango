@@ -253,6 +253,29 @@
   color: var(--accent);
 }
 
+/* Aviso de validade de lote vencida/próxima (controle interno do mercado,
+   nunca mostrado ao consumidor — ver validade_lote em CadastroProdutos.jsx
+   e migration 005). Cores de alerta diferentes do selo de promoção roxo
+   (.badge-promocao), pra não confundir os dois tipos de aviso. */
+.badge-lote {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 3px 8px;
+  margin-top: 2px;
+}
+
+.badge-lote-proximo {
+  color: #b54708;
+  background: #fef6ee;
+}
+
+.badge-lote-vencido {
+  color: #b42318;
+  background: #fef3f2;
+}
+
 /* Mesmo visual do selo de promoção já usado na Home do consumidor
    (.badge-promocao em Home.css), para o lojista reconhecer de imediato que
    é a mesma informação que aparece do outro lado (app do consumidor). */

@@ -73,6 +73,10 @@ const FORM_VAZIO = {
   preco_promocional: '',
   promocao_inicio: '',
   promocao_validade_fim: '',
+  // Validade do LOTE físico (controle interno do mercado, não aparece para
+  // o consumidor) — diferente de promocao_validade_fim, que é até quando o
+  // DESCONTO vale (ver migration 005).
+  validade_lote: '',
 }
 
 // Formatação automática do preço ao sair do campo (onBlur): se o lojista
@@ -105,6 +109,21 @@ function formatarData(dataIso) {
 // presença de uma data de validade (ver migration 004). A promoção só conta
 // como "ativa" se a flag estiver ligada E a data de hoje estiver dentro do
 // range (quando um dos dois lados do range existir).
+// Validade do LOTE físico (controle interno, ver migration 005) — status
+// simples pra destacar visualmente no card quando já venceu ou está perto
+// de vencer (3 dias), só pro lojista, nunca mostrado ao consumidor.
+function statusValidadeLote(validadeLote) {
+  if (!validadeLote) return null
+  const hojeIso = new Date().toISOString().slice(0, 10)
+  if (validadeLote < hojeIso) return 'vencido'
+
+  const emTresDias = new Date()
+  emTresDias.setDate(emTresDias.getDate() + 3)
+  if (validadeLote <= emTresDias.toISOString().slice(0, 10)) return 'proximo'
+
+  return 'ok'
+}
+
 function promocaoEstaAtiva(produto) {
   if (!produto.promocao_ativa) return false
   const agoraIso = new Date().toISOString()
@@ -172,7 +191,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
 
     const { data: produtosExistentes, error: erroProdutos } = await supabase
       .from('products')
-      .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_ativa, preco_promocional, promocao_inicio, promocao_validade_fim')
+      .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_ativa, preco_promocional, promocao_inicio, promocao_validade_fim, validade_lote')
       .eq('market_id', idMercado)
       .order('created_at', { ascending: false })
 
@@ -220,6 +239,9 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
       // primeiros caracteres já são a data que o input precisa.
       promocao_inicio: produto.promocao_inicio ? produto.promocao_inicio.slice(0, 10) : '',
       promocao_validade_fim: produto.promocao_validade_fim ? produto.promocao_validade_fim.slice(0, 10) : '',
+      // validade_lote é coluna `date` (não timestamptz) — já vem como
+      // "YYYY-MM-DD", sem precisar do slice usado acima.
+      validade_lote: produto.validade_lote ?? '',
     })
     setErroForm('')
     setModoFormulario(produto.id)
@@ -294,6 +316,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
       preco_promocional: form.promocao_ativa ? precoPromocionalNumero : null,
       promocao_inicio: form.promocao_ativa ? form.promocao_inicio : null,
       promocao_validade_fim: form.promocao_ativa ? form.promocao_validade_fim : null,
+      validade_lote: form.validade_lote || null,
     }
 
     setSalvando(true)
@@ -309,7 +332,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
         .update(dadosProduto)
         .eq('id', modoFormulario)
         .eq('market_id', marketId)
-        .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_ativa, preco_promocional, promocao_inicio, promocao_validade_fim')
+        .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_ativa, preco_promocional, promocao_inicio, promocao_validade_fim, validade_lote')
         .single()
 
       if (error || !data) {
@@ -323,7 +346,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
       const { data, error } = await supabase
         .from('products')
         .insert({ market_id: marketId, ...dadosProduto })
-        .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_ativa, preco_promocional, promocao_inicio, promocao_validade_fim')
+        .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_ativa, preco_promocional, promocao_inicio, promocao_validade_fim, validade_lote')
         .single()
 
       if (error || !data) {
@@ -439,6 +462,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
               <ul className="mercado-lista-produtos">
                 {produtos.map((produto) => {
                   const emPromocao = promocaoEstaAtiva(produto)
+                  const statusLote = statusValidadeLote(produto.validade_lote)
 
                   return (
                     <li key={produto.id} className="card-produto">
@@ -474,6 +498,15 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
                             <span className="card-produto-preco">{formatarPreco(produto.preco)}</span>
                           )}
                         </div>
+                        {(statusLote === 'vencido' || statusLote === 'proximo') && (
+                          <span
+                            className={`badge-lote badge-lote-${statusLote}`}
+                            title="Visível só para você — o cliente não vê isso"
+                          >
+                            {statusLote === 'vencido' ? 'Lote vencido' : 'Lote vence em breve'} ·{' '}
+                            {formatarData(produto.validade_lote)}
+                          </span>
+                        )}
                       </div>
 
                       <div className="card-produto-acoes">
@@ -573,6 +606,22 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
                   value={form.peso}
                   onChange={(event) => setForm((atual) => ({ ...atual, peso: event.target.value }))}
                 />
+              </div>
+
+              <div className="field">
+                <label className="field-label" htmlFor="produto-validade-lote">
+                  Validade do lote (opcional)
+                </label>
+                <input
+                  id="produto-validade-lote"
+                  type="date"
+                  className="field-input"
+                  value={form.validade_lote}
+                  onChange={(event) => setForm((atual) => ({ ...atual, validade_lote: event.target.value }))}
+                />
+                <span className="field-hint">
+                  Só você vê isso — é diferente da data da promoção. Ajuda a controlar o estoque, o cliente não vê.
+                </span>
               </div>
 
               <div className="field">
