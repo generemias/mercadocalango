@@ -23,8 +23,9 @@ import '../../styles/forms.css'
  * Diferenças propositais em relação ao Login do consumidor:
  * - Só e-mail/senha (sem Google/Apple) — decisão já tomada pelo CEO para o
  *   painel do mercado.
- * - Sem "Esqueci minha senha" por enquanto (não faz parte do escopo atual;
- *   não inventar aqui, pode ser pedido pelo CEO mais tarde).
+ * - "Esqueci minha senha" leva para EsqueciSenhaMercado.jsx (aprovado pelo
+ *   CEO), que usa a mesma mecânica do EsqueciSenha.jsx do consumidor, só com
+ *   o selo do painel do mercado em vez do layout padrão do consumidor.
  * - Selo "Painel do mercado parceiro" acima do título (prop eyebrow do
  *   AuthLayout), para o lojista saber de imediato que está no lugar certo —
  *   e para quem usa o app do consumidor e caiu aqui por engano perceber que
@@ -40,7 +41,7 @@ import '../../styles/forms.css'
  * ir (dashboard do mercado é a próxima etapa), mas o login em si já funciona
  * de verdade.
  */
-function LoginMercado({ onNavigateToLoginConsumidor, onLoginSuccess }) {
+function LoginMercado({ onNavigateToLoginConsumidor, onNavigateToEsqueciSenha, onLoginSuccess }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -155,6 +156,9 @@ function LoginMercado({ onNavigateToLoginConsumidor, onLoginSuccess }) {
             onChange={(event) => setPassword(event.target.value)}
             required
           />
+          <button type="button" className="forgot-link" onClick={onNavigateToEsqueciSenha}>
+            Esqueci minha senha
+          </button>
         </div>
 
         {errorMessage && <span className="form-error">{errorMessage}</span>}
