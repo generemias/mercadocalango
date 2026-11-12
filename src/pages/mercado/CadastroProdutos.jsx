@@ -59,9 +59,24 @@ import './CadastroProdutos.css'
 const FORM_VAZIO = {
   nome: '',
   categoria: '',
+  marca: '',
+  peso: '',
   preco: '',
   imagem_url: '',
   promocao_validade_fim: '',
+}
+
+// Formatação automática do preço ao sair do campo (onBlur): se o lojista
+// digitou só a parte inteira (ex: "25"), completa com ",00" — decisão do
+// CEO para evitar cadastrar um preço errado por esquecer os centavos. Não
+// mexe se já tiver vírgula ou ponto (ex: "24,90" ou "24.90" continuam como
+// o lojista digitou).
+function completarCentavos(valor) {
+  const valorLimpo = valor.trim()
+  if (!valorLimpo || valorLimpo.includes(',') || valorLimpo.includes('.')) {
+    return valorLimpo
+  }
+  return `${valorLimpo},00`
 }
 
 function formatarPreco(preco) {
@@ -87,6 +102,11 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
   const [produtos, setProdutos] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(null)
+  // Categorias já usadas (por qualquer mercado) para sugerir no campo
+  // "Categoria" via <datalist> — não trava a digitação livre, só ajuda a
+  // reaproveitar nomes já existentes em vez de criar variações do mesmo
+  // termo (ex: "Bebida" vs "Bebidas").
+  const [categoriasSugeridas, setCategoriasSugeridas] = useState([])
 
   // null = formulário fechado (só lista + botão "Novo produto").
   // 'novo' = formulário aberto para cadastrar.
@@ -135,7 +155,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
 
     const { data: produtosExistentes, error: erroProdutos } = await supabase
       .from('products')
-      .select('id, nome, categoria, preco, imagem_url, promocao_validade_fim')
+      .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_validade_fim')
       .eq('market_id', idMercado)
       .order('created_at', { ascending: false })
 
@@ -147,6 +167,19 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
 
     setProdutos(produtosExistentes ?? [])
     setCarregando(false)
+
+    // Sugestões de categoria: busca as categorias já usadas em TODOS os
+    // mercados (não só o logado), pra reaproveitar nomenclatura entre
+    // parceiros diferentes. Falha silenciosa (fire-and-forget) — é só uma
+    // conveniência de digitação, não deve travar a tela se der erro.
+    supabase
+      .from('products')
+      .select('categoria')
+      .then(({ data: categoriasData, error: erroCategorias }) => {
+        if (erroCategorias) return
+        const unicas = [...new Set((categoriasData ?? []).map((item) => item.categoria))].sort()
+        setCategoriasSugeridas(unicas)
+      })
   }
 
   function handleAbrirNovo() {
@@ -159,6 +192,8 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
     setForm({
       nome: produto.nome,
       categoria: produto.categoria,
+      marca: produto.marca ?? '',
+      peso: produto.peso ?? '',
       preco: String(produto.preco),
       imagem_url: produto.imagem_url ?? '',
       promocao_validade_fim: produto.promocao_validade_fim ?? '',
@@ -200,6 +235,8 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
     const dadosProduto = {
       nome,
       categoria,
+      marca: form.marca.trim() || null,
+      peso: form.peso.trim() || null,
       preco: precoNumero,
       imagem_url: form.imagem_url.trim(),
       promocao_validade_fim: form.promocao_validade_fim || null,
@@ -218,7 +255,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
         .update(dadosProduto)
         .eq('id', modoFormulario)
         .eq('market_id', marketId)
-        .select('id, nome, categoria, preco, imagem_url, promocao_validade_fim')
+        .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_validade_fim')
         .single()
 
       if (error || !data) {
@@ -232,7 +269,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
       const { data, error } = await supabase
         .from('products')
         .insert({ market_id: marketId, ...dadosProduto })
-        .select('id, nome, categoria, preco, imagem_url, promocao_validade_fim')
+        .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_validade_fim')
         .single()
 
       if (error || !data) {
@@ -361,7 +398,11 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
 
                       <div className="card-produto-info">
                         <span className="card-produto-nome">{produto.nome}</span>
-                        <span className="card-produto-categoria">{produto.categoria}</span>
+                        <span className="card-produto-categoria">
+                          {produto.categoria}
+                          {produto.marca && ` · ${produto.marca}`}
+                          {produto.peso && ` · ${produto.peso}`}
+                        </span>
                         <div className="card-produto-linha-preco">
                           <span className="card-produto-preco">{formatarPreco(produto.preco)}</span>
                           {emPromocao && (
@@ -429,7 +470,45 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
                   placeholder="ex: Alimentos, Bebidas, Limpeza"
                   value={form.categoria}
                   onChange={(event) => setForm((atual) => ({ ...atual, categoria: event.target.value }))}
+                  // list + datalist: sugere categorias já usadas por
+                  // qualquer mercado, sem travar a digitação livre (ver
+                  // categoriasSugeridas, carregado junto com os produtos).
+                  list="produto-categorias-sugeridas"
+                  autoComplete="off"
                   required
+                />
+                <datalist id="produto-categorias-sugeridas">
+                  {categoriasSugeridas.map((categoriaSugerida) => (
+                    <option key={categoriaSugerida} value={categoriaSugerida} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div className="field">
+                <label className="field-label" htmlFor="produto-marca">
+                  Marca (opcional)
+                </label>
+                <input
+                  id="produto-marca"
+                  type="text"
+                  className="field-input"
+                  placeholder="ex: Camil"
+                  value={form.marca}
+                  onChange={(event) => setForm((atual) => ({ ...atual, marca: event.target.value }))}
+                />
+              </div>
+
+              <div className="field">
+                <label className="field-label" htmlFor="produto-peso">
+                  Peso/quantidade (opcional)
+                </label>
+                <input
+                  id="produto-peso"
+                  type="text"
+                  className="field-input"
+                  placeholder="ex: 5kg, pacote 500g, caixa com 12 unidades"
+                  value={form.peso}
+                  onChange={(event) => setForm((atual) => ({ ...atual, peso: event.target.value }))}
                 />
               </div>
 
@@ -445,8 +524,12 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
                   placeholder="ex: 24,90"
                   value={form.preco}
                   onChange={(event) => setForm((atual) => ({ ...atual, preco: event.target.value }))}
+                  onBlur={(event) =>
+                    setForm((atual) => ({ ...atual, preco: completarCentavos(event.target.value) }))
+                  }
                   required
                 />
+                <span className="field-hint">Digitou só o número inteiro? Completamos com ",00" sozinhos.</span>
               </div>
 
               <div className="field">

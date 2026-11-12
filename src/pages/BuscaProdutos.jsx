@@ -91,7 +91,7 @@ function BuscaProdutos({ onNavigateToMercado }) {
 
     const { data, error } = await supabase
       .from('products')
-      .select('id, nome, categoria, preco, market_id, market_profiles(nome)')
+      .select('id, nome, categoria, marca, peso, preco, market_id, market_profiles(nome)')
       .or(`nome.ilike.%${termoBusca}%,categoria.ilike.%${termoBusca}%`)
       .limit(30)
 
@@ -193,7 +193,11 @@ function BuscaProdutos({ onNavigateToMercado }) {
               >
                 <div className="card-produto-busca-info">
                   <span className="card-produto-busca-nome">{produto.nome}</span>
-                  <span className="card-produto-busca-categoria">{produto.categoria}</span>
+                  <span className="card-produto-busca-categoria">
+                    {produto.categoria}
+                    {produto.marca && ` · ${produto.marca}`}
+                    {produto.peso && ` · ${produto.peso}`}
+                  </span>
                   <span className="card-produto-busca-mercado">
                     Vendido em: {produto.market_profiles?.nome ?? 'Mercado'}
                   </span>

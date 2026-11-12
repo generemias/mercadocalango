@@ -123,7 +123,7 @@ function MercadoDetalhe({
     const agora = new Date().toISOString()
     const { data: produtosData, error: produtosError } = await supabase
       .from('products')
-      .select('id, nome, categoria, preco, promocao_validade_fim')
+      .select('id, nome, categoria, marca, peso, preco, promocao_validade_fim')
       .eq('market_id', mercadoId)
       .order('created_at', { ascending: true })
 
@@ -366,7 +366,11 @@ function MercadoDetalhe({
                 <li key={produto.id} className="card-produto-mercado">
                   <div className="card-produto-mercado-info">
                     <span className="card-produto-mercado-nome">{produto.nome}</span>
-                    <span className="card-produto-mercado-categoria">{produto.categoria}</span>
+                    <span className="card-produto-mercado-categoria">
+                      {produto.categoria}
+                      {produto.marca && ` · ${produto.marca}`}
+                      {produto.peso && ` · ${produto.peso}`}
+                    </span>
                   </div>
                   <div className="card-produto-mercado-direita">
                     {produto.emPromocao && <span className="badge-promocao">Promoção</span>}
