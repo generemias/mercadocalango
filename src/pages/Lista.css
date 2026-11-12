@@ -40,8 +40,37 @@
   color: var(--text-h);
 }
 
+.lista-seletor-grupo {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .lista-seletor-label {
   flex: 0 0 auto;
+}
+
+/* Botão "+" para criar uma lista nova (handleCriarLista), ao lado do
+   seletor — mesma linguagem visual circular/compacta já usada em botões
+   de ação pequenos do app (ex: .lista-adicionar-botao). */
+.lista-nova-botao {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.lista-nova-botao:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .sr-only {

@@ -24,6 +24,13 @@ import './Lista.css'
  * integração real — só o "motor" por trás trocou de dados de exemplo em
  * useState para chamadas reais ao Supabase.
  *
+ * Mais de uma lista (pedido do CEO): a tabela shopping_lists já suportava
+ * várias listas por consumidor desde o início (não existe nenhum limite de
+ * 1 lista no schema), e o seletor no topo já trocava entre elas — só
+ * faltava um jeito de CRIAR uma lista nova além da "Minha lista" automática
+ * do primeiro uso. handleCriarLista resolve isso com um prompt simples
+ * (nome da lista), no mesmo espírito de handleEntrarComCodigo logo abaixo.
+ *
  * "Ajustar o valor na hora das compras" (pedido do CEO): cada item ganhou
  * um campo opcional valor_pago (ver migration 006). Só aparece depois que o
  * item é marcado como comprado — antes disso não faz sentido perguntar
@@ -192,6 +199,33 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
 
   function handleTrocarLista(event) {
     setListaAtivaId(event.target.value)
+  }
+
+  async function handleCriarLista() {
+    const nomeDigitado = window.prompt('Nome da nova lista (ex: "Mercado do mês", "Churrasco"):')
+    if (!nomeDigitado) return
+
+    const nome = nomeDigitado.trim()
+    if (!nome) return
+
+    if (!meuConsumerId) {
+      setErro('Não foi possível identificar seu usuário. Tente entrar novamente.')
+      return
+    }
+
+    const { data: novaLista, error } = await supabase
+      .from('shopping_lists')
+      .insert({ consumer_id: meuConsumerId, nome })
+      .select('id, nome, consumer_id, convite_codigo')
+      .single()
+
+    if (error || !novaLista) {
+      setErro('Não foi possível criar a lista agora.')
+      return
+    }
+
+    setListas((atual) => [...atual, novaLista])
+    setListaAtivaId(novaLista.id)
   }
 
   async function handleCompartilhar(lista) {
@@ -373,24 +407,36 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
       <header className="lista-topbar">
         <h1 className="lista-titulo">Lista de compras</h1>
 
-        {/* Seletor de lista — só aparece de forma simples (select nativo),
-            já que a maioria dos usuários terá apenas uma lista no MVP. */}
+        {/* Seletor de lista (select nativo) — navega entre todas as listas
+            que a pessoa tem acesso (próprias e compartilhadas, ver
+            carregarListas). "+" ao lado cria mais uma lista própria. */}
         {listaAtiva && (
-          <label className="lista-seletor-label" htmlFor="seletor-lista">
-            <span className="sr-only">Escolher lista</span>
-            <select
-              id="seletor-lista"
-              className="lista-seletor"
-              value={listaAtiva.id}
-              onChange={handleTrocarLista}
+          <div className="lista-seletor-grupo">
+            <label className="lista-seletor-label" htmlFor="seletor-lista">
+              <span className="sr-only">Escolher lista</span>
+              <select
+                id="seletor-lista"
+                className="lista-seletor"
+                value={listaAtiva.id}
+                onChange={handleTrocarLista}
+              >
+                {listas.map((lista) => (
+                  <option key={lista.id} value={lista.id}>
+                    {lista.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="lista-nova-botao"
+              aria-label="Criar nova lista"
+              title="Criar nova lista"
+              onClick={handleCriarLista}
             >
-              {listas.map((lista) => (
-                <option key={lista.id} value={lista.id}>
-                  {lista.nome}
-                </option>
-              ))}
-            </select>
-          </label>
+              +
+            </button>
+          </div>
         )}
       </header>
 
