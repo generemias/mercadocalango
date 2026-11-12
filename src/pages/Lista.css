@@ -90,6 +90,31 @@
   color: var(--accent);
 }
 
+.lista-total-gasto {
+  color: var(--text-h);
+}
+
+/* Valor pago por item — só aparece depois de marcado como comprado (ver
+   comentário em Lista.jsx). Campo pequeno, lado a lado com o nome do item e
+   o botão de remover, por isso largura fixa em vez de flex:1. */
+.lista-item-valor-pago {
+  flex: 0 0 auto;
+  width: 64px;
+  font: inherit;
+  font-size: 13px;
+  text-align: right;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: var(--text-h);
+  background: var(--bg);
+}
+
+.lista-item-valor-pago:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 /* ---------- Adicionar item ----------
    Fica fixo no topo do conteúdo (não no fim da lista) porque é a ação mais
    repetida nesta tela — o usuário não deveria precisar rolar pra adicionar

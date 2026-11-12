@@ -23,7 +23,31 @@ import './Lista.css'
  * mesmas já aprovadas pelo CEO e documentadas antes desta tela virar
  * integração real — só o "motor" por trás trocou de dados de exemplo em
  * useState para chamadas reais ao Supabase.
+ *
+ * "Ajustar o valor na hora das compras" (pedido do CEO): cada item ganhou
+ * um campo opcional valor_pago (ver migration 006). Só aparece depois que o
+ * item é marcado como comprado — antes disso não faz sentido perguntar
+ * quanto custou algo que ainda não foi pago. O campo salva ao perder o foco
+ * (onBlur), mesmo padrão de "salva sozinho sem precisar de botão" já usado
+ * em outras telas do app (ex: handleAlternarComprado logo abaixo). A soma
+ * dos itens com valor preenchido aparece como "Total gasto" ao lado do
+ * contador de itens comprados.
  */
+// Mesma formatação automática de preço já usada no cadastro de produtos do
+// mercado (CadastroProdutos.jsx): completa ",00" se a pessoa digitou só a
+// parte inteira, sem mexer se já tiver vírgula ou ponto.
+function completarCentavos(valor) {
+  const valorLimpo = valor.trim()
+  if (!valorLimpo || valorLimpo.includes(',') || valorLimpo.includes('.')) {
+    return valorLimpo
+  }
+  return `${valorLimpo},00`
+}
+
+function formatarPreco(valor) {
+  return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
 function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
   const [listas, setListas] = useState([])
   const [listaAtivaId, setListaAtivaId] = useState(null)
@@ -31,6 +55,11 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
   const [novoItem, setNovoItem] = useState('')
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(null)
+  // Rascunho do valor pago por item, enquanto a pessoa ainda está digitando
+  // (antes de salvar no onBlur) — ver handleDigitarValorPago/
+  // handleSalvarValorPago mais abaixo. Chave: id do item; valor: texto bruto
+  // do input (ainda não validado/formatado).
+  const [valoresPagosDraft, setValoresPagosDraft] = useState({})
 
   // Carrega as listas do consumidor logado ao montar a tela.
   useEffect(() => {
@@ -100,7 +129,7 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
 
     const { data, error } = await supabase
       .from('shopping_list_items')
-      .select('id, nome_item, comprado')
+      .select('id, nome_item, comprado, valor_pago')
       .eq('list_id', listId)
       .order('created_at', { ascending: true })
 
@@ -114,6 +143,14 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
 
   const totalItens = itens.length
   const totalComprados = itens.filter((item) => item.comprado).length
+  // Soma só itens que estão comprado=true E têm valor_pago preenchido —
+  // sem o "comprado=true", o campo de valor fica escondido na tela (ver
+  // comentário no topo do arquivo), então um valor de uma compra desfeita
+  // (desmarcada depois) não pode continuar contando no total sem aparecer
+  // em lugar nenhum.
+  const itensComprovados = itens.filter((item) => item.comprado && item.valor_pago != null)
+  const totalGasto = itensComprovados.reduce((soma, item) => soma + Number(item.valor_pago), 0)
+  const temAlgumValorPago = itensComprovados.length > 0
 
   function handleTrocarLista(event) {
     setListaAtivaId(event.target.value)
@@ -127,7 +164,7 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
     const { data, error } = await supabase
       .from('shopping_list_items')
       .insert({ list_id: listaAtivaId, nome_item: nome, comprado: false })
-      .select('id, nome_item, comprado')
+      .select('id, nome_item, comprado, valor_pago')
       .single()
 
     if (error || !data) {
@@ -160,6 +197,49 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
       setErro('Não foi possível salvar essa alteração agora.')
       setItens((atual) =>
         atual.map((item) => (item.id === itemId ? { ...item, comprado: itemAtual.comprado } : item)),
+      )
+    }
+  }
+
+  function handleDigitarValorPago(itemId, valorDigitado) {
+    setValoresPagosDraft((atual) => ({ ...atual, [itemId]: valorDigitado }))
+  }
+
+  async function handleSalvarValorPago(itemId) {
+    const valorDigitado = valoresPagosDraft[itemId]
+    // undefined = a pessoa não mexeu no campo (ex: só passou o foco e saiu)
+    // — nada para salvar.
+    if (valorDigitado === undefined) return
+
+    const valorFormatado = completarCentavos(valorDigitado)
+    const valorPago = valorFormatado ? Number(valorFormatado.replace(',', '.')) : null
+
+    // Campo vazio (apagou o valor) é válido — volta a não ter valor pago
+    // registrado. Só bloqueia um número inválido de verdade (ex: "abc").
+    if (valorFormatado && (Number.isNaN(valorPago) || valorPago < 0)) {
+      setErro('Digite um valor válido (ex: 9,90) ou deixe o campo em branco.')
+      return
+    }
+
+    setValoresPagosDraft((atual) => {
+      const { [itemId]: _removido, ...resto } = atual
+      return resto
+    })
+
+    const itemAtual = itens.find((item) => item.id === itemId)
+    setItens((atual) =>
+      atual.map((item) => (item.id === itemId ? { ...item, valor_pago: valorPago } : item)),
+    )
+
+    const { error } = await supabase
+      .from('shopping_list_items')
+      .update({ valor_pago: valorPago })
+      .eq('id', itemId)
+
+    if (error) {
+      setErro('Não foi possível salvar o valor pago agora.')
+      setItens((atual) =>
+        atual.map((item) => (item.id === itemId ? { ...item, valor_pago: itemAtual?.valor_pago ?? null } : item)),
       )
     }
   }
@@ -223,6 +303,9 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
           <>
             <div className="lista-progresso">
               {totalComprados} de {totalItens} comprados
+              {temAlgumValorPago && (
+                <span className="lista-total-gasto"> · Total gasto: {formatarPreco(totalGasto)}</span>
+              )}
             </div>
 
             {/* Adicionar item — fica no topo do conteúdo porque é a ação mais
@@ -265,6 +348,26 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
                     </span>
                     <span className="lista-item-nome">{item.nome_item}</span>
                   </button>
+
+                  {/* Valor pago: só aparece depois que o item é marcado
+                      como comprado (ver comentário no topo do arquivo) —
+                      não faz sentido perguntar o preço de algo que ainda
+                      não foi pago. */}
+                  {item.comprado && (
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className="lista-item-valor-pago"
+                      placeholder="R$"
+                      aria-label={`Valor pago em ${item.nome_item}`}
+                      value={
+                        valoresPagosDraft[item.id] ??
+                        (item.valor_pago != null ? String(item.valor_pago) : '')
+                      }
+                      onChange={(event) => handleDigitarValorPago(item.id, event.target.value)}
+                      onBlur={() => handleSalvarValorPago(item.id)}
+                    />
+                  )}
 
                   <button
                     type="button"
