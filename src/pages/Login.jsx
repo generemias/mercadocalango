@@ -40,7 +40,7 @@ function Login({
 
     setSubmitting(true)
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       const mensagemErro = error.message?.toLowerCase() ?? ''
@@ -61,11 +61,37 @@ function Login({
       return
     }
 
-    // Login deu certo. Ainda não existe roteador de verdade nesta etapa do
-    // MVP — por isso quem usa este componente decide o que acontece a
-    // seguir via onLoginSuccess (hoje o App.jsx troca para a Home com um
-    // simples useState; quando o projeto adicionar rotas reais, aqui
-    // entraria algo como navigate('/home')).
+    // Garante que o perfil existe antes de seguir. Ver comentário em
+    // Cadastro.jsx: o INSERT em consumer_profiles não acontece mais no
+    // cadastro (a confirmação de e-mail deixa signUp() sem sessão naquele
+    // momento), então é aqui, no primeiro login com sessão de verdade, que
+    // criamos a linha a partir dos dados salvos como user_metadata.
+    const userId = data.user?.id
+    const { data: perfilExistente, error: erroPerfil } = await supabase
+      .from('consumer_profiles')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (!erroPerfil && !perfilExistente) {
+      const metadata = data.user?.user_metadata ?? {}
+      if (metadata.nome && metadata.cidade && metadata.bairro) {
+        await supabase.from('consumer_profiles').insert({
+          id: userId,
+          nome: metadata.nome,
+          cidade: metadata.cidade,
+          bairro: metadata.bairro,
+          aceite_localizacao: Boolean(metadata.aceite_localizacao),
+          aceite_privacidade: Boolean(metadata.aceite_privacidade),
+        })
+      }
+    }
+
+    // Ainda não existe roteador de verdade nesta etapa do MVP — por isso
+    // quem usa este componente decide o que acontece a seguir via
+    // onLoginSuccess (hoje o App.jsx troca para a Home com um simples
+    // useState; quando o projeto adicionar rotas reais, aqui entraria algo
+    // como navigate('/home')).
     console.log('[Login] login feito com sucesso para:', email)
     setSucesso(true)
     setSubmitting(false)

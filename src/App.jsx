@@ -9,6 +9,7 @@ import Explorar from './pages/Explorar'
 import MercadoDetalhe from './pages/MercadoDetalhe'
 import Perfil from './pages/Perfil'
 import LoginMercado from './pages/mercado/LoginMercado'
+import CadastroMercado from './pages/mercado/CadastroMercado'
 import EsqueciSenhaMercado from './pages/mercado/EsqueciSenhaMercado'
 import CadastroProdutos from './pages/mercado/CadastroProdutos'
 import DashboardMercado from './pages/mercado/DashboardMercado'
@@ -125,6 +126,8 @@ function App() {
       <LoginMercado
         onNavigateToLoginConsumidor={() => setTela('login')}
         onNavigateToEsqueciSenha={() => setTela('esqueci-senha-mercado')}
+        onNavigateToCadastro={() => setTela('cadastro-mercado')}
+        onPerfilIncompleto={() => setTela('perfil-mercado')}
         // LoginMercado.jsx já chama o Supabase de verdade e só dispara este
         // callback quando o login funcionou E existe uma linha em
         // market_profiles para o usuário (ver comentários lá). Cadastro de
@@ -193,6 +196,10 @@ function App() {
 
   if (tela === 'esqueci-senha-mercado') {
     return <EsqueciSenhaMercado onNavigateToLoginMercado={() => setTela('login-mercado')} />
+  }
+
+  if (tela === 'cadastro-mercado') {
+    return <CadastroMercado onNavigateToLoginMercado={() => setTela('login-mercado')} />
   }
 
   if (tela === 'lista') {

@@ -34,14 +34,26 @@ import '../../styles/forms.css'
  * onNavigateToLoginConsumidor: troca para o Login do consumidor (mesmo
  * padrão de navegação por callback já usado em todo o app; ver comentário
  * em src/App.jsx sobre o "trocador de tela" temporário).
- * onLoginSuccess: chamado SÓ quando o login no Supabase Auth funcionou E já
- * existe uma linha em market_profiles para esse usuário (ver comentário em
- * handleSubmit sobre por quê essa checagem extra existe). Quem usa este
- * componente decide a próxima tela — hoje o App.jsx ainda não tem para onde
- * ir (dashboard do mercado é a próxima etapa), mas o login em si já funciona
- * de verdade.
+ * onNavigateToCadastro: troca para a tela "Cadastrar mercado"
+ * (CadastroMercado.jsx) — agora que o próprio lojista pode criar a conta
+ * sozinho, em vez de depender do CEO criar manualmente no Supabase (ver
+ * comentário mais abaixo, no handleSubmit, sobre como isso funcionava antes).
+ * onLoginSuccess: chamado quando o login funcionou E já existe (ou acabou de
+ * ser criada) uma linha em market_profiles para esse usuário.
+ * onPerfilIncompleto: chamado quando o login funcionou mas market_profiles
+ * ainda não existe e não há dados suficientes (user_metadata do
+ * CadastroMercado.jsx, ou uma conta antiga criada manualmente pelo CEO sem
+ * esses dados) para criar a linha sozinho — em vez de travar o lojista com
+ * um erro sem saída, deixamos ele entrar e cair direto em "Meu perfil"
+ * (PerfilMercado.jsx), que já sabe criar o perfil do zero.
  */
-function LoginMercado({ onNavigateToLoginConsumidor, onNavigateToEsqueciSenha, onLoginSuccess }) {
+function LoginMercado({
+  onNavigateToLoginConsumidor,
+  onNavigateToEsqueciSenha,
+  onNavigateToCadastro,
+  onLoginSuccess,
+  onPerfilIncompleto,
+}) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -77,15 +89,16 @@ function LoginMercado({ onNavigateToLoginConsumidor, onNavigateToEsqueciSenha, o
       return
     }
 
-    // Login no Auth funcionou. Mas diferente do app do consumidor, aqui não
-    // existe tela de cadastro — o CEO cria a conta manualmente em
-    // Authentication > Users no painel do Supabase. Isso significa que pode
-    // existir um usuário autenticável sem nenhuma linha correspondente em
-    // market_profiles (ex: o CEO esqueceu de inserir a linha, ou inseriu com
-    // o id errado). As próximas telas do painel (dashboard, cadastro de
-    // produtos) dependem de market_profiles existir para este id — então
-    // checamos aqui, antes de avisar sucesso, em vez de deixar essas telas
-    // (que ainda nem existem) quebrarem sem explicação.
+    // Login no Auth funcionou. market_profiles ainda pode não existir por
+    // dois motivos: (1) CadastroMercado.jsx guardou os dados como
+    // user_metadata em vez de um INSERT direto (a confirmação de e-mail
+    // deixa signUp() sem sessão naquele momento — mesmo motivo explicado em
+    // Cadastro.jsx), e este é o primeiro login com sessão de verdade para
+    // criar a linha a partir deles; ou (2) é uma conta antiga, criada
+    // manualmente pelo CEO antes de existir tela de cadastro, sem user
+    // metadata nenhum. Tratamos os dois casos aqui, antes de avisar sucesso,
+    // em vez de deixar as próximas telas do painel (que dependem de
+    // market_profiles existir) quebrarem sem explicação.
     const userId = data.user?.id
     const { data: perfilMercado, error: erroPerfil } = await supabase
       .from('market_profiles')
@@ -100,10 +113,29 @@ function LoginMercado({ onNavigateToLoginConsumidor, onNavigateToEsqueciSenha, o
     }
 
     if (!perfilMercado) {
-      setErrorMessage(
-        'Sua conta foi criada, mas o perfil do mercado ainda não foi configurado. Entre em contato com o suporte.'
-      )
+      const metadata = data.user?.user_metadata ?? {}
+      if (metadata.nome && metadata.cidade && metadata.bairro && metadata.endereco) {
+        const { error: erroInsert } = await supabase.from('market_profiles').insert({
+          id: userId,
+          nome: metadata.nome,
+          cidade: metadata.cidade,
+          bairro: metadata.bairro,
+          endereco: metadata.endereco,
+        })
+
+        if (!erroInsert) {
+          console.log('[LoginMercado] login feito com sucesso para:', email)
+          setSubmitting(false)
+          onLoginSuccess?.()
+          return
+        }
+      }
+
+      // Sem metadata suficiente (conta antiga do CEO) ou o INSERT falhou:
+      // deixa entrar mesmo assim, indo direto para "Meu perfil" completar.
+      console.log('[LoginMercado] login feito, perfil incompleto, para:', email)
       setSubmitting(false)
+      onPerfilIncompleto?.()
       return
     }
 
@@ -118,9 +150,18 @@ function LoginMercado({ onNavigateToLoginConsumidor, onNavigateToEsqueciSenha, o
       title="Entrar"
       subtitle="Acesse para atualizar seus produtos e promoções."
       footer={
-        <button type="button" className="link" onClick={onNavigateToLoginConsumidor}>
-          Sou consumidor, voltar
-        </button>
+        <span>
+          <span>
+            Ainda não tem conta?{' '}
+            <button type="button" className="link" onClick={onNavigateToCadastro}>
+              Cadastrar mercado
+            </button>
+          </span>
+          <br />
+          <button type="button" className="link" onClick={onNavigateToLoginConsumidor}>
+            Sou consumidor, voltar
+          </button>
+        </span>
       }
     >
       <form className="auth-form" onSubmit={handleSubmit} noValidate>

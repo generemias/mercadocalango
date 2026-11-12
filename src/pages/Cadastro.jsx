@@ -64,10 +64,27 @@ function Cadastro({ onNavigateToLogin }) {
 
     setSubmitting(true)
 
-    // 1) Cria o usuário no Supabase Auth (e-mail + senha).
+    // Cria o usuário no Supabase Auth (e-mail + senha). Os dados de perfil
+    // (nome/cidade/bairro/aceites) vão como user_metadata, NÃO como um
+    // INSERT imediato em consumer_profiles: como a confirmação de e-mail
+    // está ativada no projeto, signUp() não devolve uma sessão autenticada
+    // (precisa confirmar o e-mail primeiro) — um INSERT nesse momento cai
+    // sem auth.uid() e é sempre rejeitado pela RLS de consumer_profiles
+    // (policy "to authenticated", ver database/migrations/002_rls_policies.sql).
+    // A linha em consumer_profiles só é criada de verdade no primeiro login
+    // bem-sucedido (ver Login.jsx), quando já existe uma sessão de verdade.
     const { data, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
+      options: {
+        data: {
+          nome: form.nome,
+          cidade: form.cidade,
+          bairro: form.bairro,
+          aceite_localizacao: aceitaLocalizacao,
+          aceite_privacidade: aceitaPrivacidade,
+        },
+      },
     })
 
     if (error) {
@@ -88,36 +105,14 @@ function Cadastro({ onNavigateToLogin }) {
       return
     }
 
-    const userId = data.user?.id
-    if (!userId) {
+    if (!data.user?.id) {
       // Caso raro: signUp sem erro mas sem usuário retornado.
       setErrorMessage('Não foi possível criar a conta. Tente novamente.')
       setSubmitting(false)
       return
     }
 
-    // 2) Grava o perfil do consumidor na tabela consumer_profiles, ligada
-    // por id ao usuário recém-criado (schema em database/migrations/001_init.sql).
-    const { error: profileError } = await supabase.from('consumer_profiles').insert({
-      id: userId,
-      nome: form.nome,
-      cidade: form.cidade,
-      bairro: form.bairro,
-      aceite_localizacao: aceitaLocalizacao,
-      aceite_privacidade: aceitaPrivacidade,
-    })
-
-    if (profileError) {
-      // A conta de login já foi criada, mas o perfil não foi salvo. Avisamos
-      // o usuário em vez de fingir sucesso.
-      setErrorMessage(
-        'Sua conta foi criada, mas houve um problema ao salvar seus dados de perfil. Tente entrar e completar o perfil novamente.'
-      )
-      setSubmitting(false)
-      return
-    }
-
-    console.log('[Cadastro] conta e perfil criados com sucesso para:', form.email)
+    console.log('[Cadastro] conta criada com sucesso para:', form.email)
     setSucesso(true)
     setSubmitting(false)
   }
