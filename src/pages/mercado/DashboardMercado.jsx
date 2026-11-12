@@ -56,11 +56,13 @@ import './DashboardMercado.css'
  * Props:
  * - onNavigateToProdutos: troca para a tela de Cadastro de produtos
  *   (mesmo padrão de navegação por callback já usado em todo o app).
+ * - onNavigateToPerfil: troca para a tela de Perfil do mercado (ver
+ *   src/pages/mercado/PerfilMercado.jsx), 3ª aba do painel.
  * - onSair: chamado depois do logout (mesmo padrão de
  *   src/pages/mercado/CadastroProdutos.jsx).
  */
 
-function DashboardMercado({ onNavigateToProdutos, onSair }) {
+function DashboardMercado({ onNavigateToProdutos, onNavigateToPerfil, onSair }) {
   const [marketNome, setMarketNome] = useState('')
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(null)
@@ -248,6 +250,9 @@ function DashboardMercado({ onNavigateToProdutos, onSair }) {
           </button>
           <button type="button" className="mercado-tab mercado-tab-ativa" aria-current="page">
             Dashboard
+          </button>
+          <button type="button" className="mercado-tab" onClick={onNavigateToPerfil}>
+            Perfil
           </button>
         </nav>
       </header>

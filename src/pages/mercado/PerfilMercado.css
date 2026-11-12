@@ -1,0 +1,237 @@
+/*
+  Tela "Perfil do mercado" do painel do mercado — mobile-first, reaproveitando
+  as mesmas variáveis de cor/sombra de src/index.css (--accent, --accent-bg,
+  --border, --text, --text-h, --bg, --code-bg) usadas em todo o app do
+  consumidor e nas outras telas do painel (Material Design 3 + Google Maps +
+  Notion + Apple).
+
+  As classes .mercado-screen, .mercado-topbar*, .mercado-eyebrow,
+  .mercado-nome, .mercado-sair-botao, .mercado-tabs*, .mercado-content,
+  .mercado-secao-titulo e .mercado-form-secao/.mercado-form-acoes são
+  repetidas aqui de propósito, com os mesmos nomes e valores de
+  CadastroProdutos.css e DashboardMercado.css — mesmo padrão de duplicação já
+  usado nesses dois arquivos (ver comentário sobre isso em
+  CadastroProdutos.css). Se o painel do mercado ganhar uma quarta tela, vale
+  extrair isso para um CSS compartilhado (ex: src/styles/painel-mercado.css).
+*/
+
+.mercado-screen {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* ---------- Topo ---------- */
+
+.mercado-topbar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mercado-topbar-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mercado-topbar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  min-width: 0;
+}
+
+.mercado-eyebrow {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.mercado-nome {
+  margin: 0;
+  font-size: 19px;
+  letter-spacing: -0.2px;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mercado-sair-botao {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--code-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  min-height: 40px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.mercado-sair-botao:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- Abas "Produtos / Dashboard / Perfil" ----------
+   Mesma barra de abas no topo já usada nas outras duas telas do painel
+   (ver comentário em CadastroProdutos.css sobre por que é no topo, não uma
+   bottom-nav). Esta tela adiciona a 3ª aba, "Perfil". */
+
+.mercado-tabs {
+  display: flex;
+  gap: 4px;
+  padding-top: 4px;
+  margin-top: -2px;
+}
+
+.mercado-tab {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  padding: 10px 4px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.mercado-tab:hover {
+  color: var(--text-h);
+}
+
+.mercado-tab-ativa,
+.mercado-tab-ativa:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Conteúdo ---------- */
+
+.mercado-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 20px 32px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.mercado-secao-titulo {
+  margin: 0;
+  font-size: 17px;
+  text-align: left;
+}
+
+/* Aviso de "perfil ainda não criado" — mesmo visual de alerta suave do
+   .mercado-vazio (borda tracejada) já usado em CadastroProdutos.css, para o
+   lojista reconhecer de imediato que é um estado especial da tela, não um
+   erro. */
+.perfil-mercado-aviso {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 150%;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1.5px dashed var(--border);
+  border-radius: 16px;
+}
+
+/* ---------- Formulário ---------- */
+
+.mercado-form-secao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mercado-form-acoes {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.mercado-form-acoes .btn-primary {
+  flex: 1;
+  min-height: 48px;
+}
+
+/* Cidade/bairro e latitude/longitude lado a lado em telas maiores que a de
+   um celular estreito — em celular (ver media query abaixo) empilha, porque
+   dois campos espremidos ficam difíceis de tocar/ler. */
+.perfil-mercado-linha-dupla {
+  display: flex;
+  gap: 12px;
+}
+
+.perfil-mercado-linha-dupla .field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Dica de como pegar latitude/longitude no Google Maps — visual de "card de
+   ajuda" discreto (fundo levemente destacado, sem borda pesada), para ficar
+   claro que é uma instrução e não um dado do formulário. */
+.perfil-mercado-dica {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 150%;
+  text-align: left;
+  background: var(--code-bg);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+/* Mensagem de sucesso ao salvar — mesma posição/estrutura do .form-error já
+   usado em todo o app (ver src/styles/forms.css), só trocando a cor para
+   reforçar que é uma confirmação, não um erro. */
+.perfil-mercado-sucesso {
+  font-size: 13px;
+  color: var(--accent);
+  text-align: left;
+}
+
+/* ---------- Telas maiores ----------
+   Mesma decisão já registrada em CadastroProdutos.css e DashboardMercado.css:
+   o painel do mercado tende a ser mais usado em desktop/tablet, então o
+   conteúdo centraliza com largura máxima confortável em vez de esticar até a
+   borda. */
+
+@media (min-width: 560px) {
+  .mercado-topbar {
+    padding: 24px 32px 0;
+  }
+
+  .mercado-content {
+    padding: 20px 32px 40px;
+  }
+}
+
+@media (max-width: 420px) {
+  /* Em telas bem estreitas, cidade/bairro e latitude/longitude lado a lado
+     apertam demais os campos de toque — empilha para manter o alvo de toque
+     confortável (mesmo limite de largura já usado em
+     DashboardMercado.css para os cards de métrica). */
+  .perfil-mercado-linha-dupla {
+    flex-direction: column;
+    gap: 16px;
+  }
+}

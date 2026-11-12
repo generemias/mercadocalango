@@ -11,6 +11,7 @@ import Perfil from './pages/Perfil'
 import LoginMercado from './pages/mercado/LoginMercado'
 import CadastroProdutos from './pages/mercado/CadastroProdutos'
 import DashboardMercado from './pages/mercado/DashboardMercado'
+import PerfilMercado from './pages/mercado/PerfilMercado'
 import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
 
 /**
@@ -126,8 +127,9 @@ function App() {
         // callback quando o login funcionou E existe uma linha em
         // market_profiles para o usuário (ver comentários lá). Cadastro de
         // produtos/promoções continua sendo o ponto de entrada principal do
-        // mercado logado; o Dashboard (DashboardMercado.jsx) é acessado a
-        // partir da aba no cabeçalho desta tela.
+        // mercado logado; Dashboard e Perfil (DashboardMercado.jsx /
+        // PerfilMercado.jsx) são acessados a partir das abas no cabeçalho
+        // desta tela.
         onLoginSuccess={() => setTela('cadastro-produtos-mercado')}
       />
     )
@@ -139,6 +141,7 @@ function App() {
         // Troca de aba dentro do painel do mercado (mesma sessão já logada,
         // sem precisar passar pelo login de novo).
         onNavigateToDashboard={() => setTela('dashboard-mercado')}
+        onNavigateToPerfil={() => setTela('perfil-mercado')}
         // CadastroProdutos.jsx já chama supabase.auth.signOut() de verdade
         // antes de avisar este callback (mesmo padrão do onSair do
         // Perfil.jsx do consumidor). Diferente do consumidor, ainda não há
@@ -159,7 +162,20 @@ function App() {
       <DashboardMercado
         // Mesmo padrão de troca de aba usado em CadastroProdutos acima.
         onNavigateToProdutos={() => setTela('cadastro-produtos-mercado')}
+        onNavigateToPerfil={() => setTela('perfil-mercado')}
         // Mesmo padrão de logout de CadastroProdutos acima.
+        onSair={() => setTela('login-mercado')}
+      />
+    )
+  }
+
+  if (tela === 'perfil-mercado') {
+    return (
+      <PerfilMercado
+        // Mesmo padrão de troca de aba usado nas outras telas do painel.
+        onNavigateToProdutos={() => setTela('cadastro-produtos-mercado')}
+        onNavigateToDashboard={() => setTela('dashboard-mercado')}
+        // Mesmo padrão de logout das outras telas do painel.
         onSair={() => setTela('login-mercado')}
       />
     )
