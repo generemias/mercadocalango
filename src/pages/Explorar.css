@@ -59,6 +59,73 @@
   color: var(--accent);
 }
 
+/* ---------- Mapa geral (overlay) ----------
+   Tela cheia por cima de tudo (inclusive da barra de navegação inferior),
+   mesmo padrão de "modal full-screen" comum em apps mobile para mapas. */
+
+.explorar-mapa-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.explorar-mapa-overlay-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.explorar-mapa-overlay-titulo {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.explorar-mapa-overlay-fechar {
+  font: inherit;
+  font-size: 16px;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: none;
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.explorar-mapa-overlay-mapa {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.explorar-mapa-overlay-vazio {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.explorar-mapa-overlay-popup-botao {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 4px 0 0;
+  cursor: pointer;
+}
+
 /* ---------- Conteúdo ---------- */
 
 .explorar-content {

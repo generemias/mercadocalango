@@ -173,6 +173,34 @@
   transform: scale(0.99);
 }
 
+/* ---------- Mapa embutido ----------
+   Referência visual da localização do mercado (OpenStreetMap via Leaflet).
+   Altura fixa pequena (dentro da faixa 200-250px pedida) — é só um apoio
+   visual abaixo do botão "Traçar rota", não o foco principal da tela, por
+   isso não compete em altura com a lista de produtos. Cantos arredondados e
+   borda iguais aos outros cards da tela (.card-produto-mercado) para manter
+   a mesma linguagem visual. */
+
+.mercado-detalhe-mapa {
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.mercado-detalhe-mapa-container {
+  height: 220px;
+  width: 100%;
+}
+
+.mercado-detalhe-mapa-vazio {
+  margin: 0;
+  padding: 18px 14px;
+  font-size: 13.5px;
+  color: var(--text);
+  text-align: center;
+  background: var(--code-bg);
+}
+
 /* ---------- Lista de produtos ---------- */
 
 .mercado-detalhe-produtos {

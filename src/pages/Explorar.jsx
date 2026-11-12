@@ -1,7 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import marcadorIcone from 'leaflet/dist/images/marker-icon.png'
+import marcadorIcone2x from 'leaflet/dist/images/marker-icon-2x.png'
+import marcadorSombra from 'leaflet/dist/images/marker-shadow.png'
 import { supabase } from '../lib/supabaseClient'
 import BuscaProdutos from './BuscaProdutos'
 import './Explorar.css'
+
+// Mesma correção de ícone do Leaflet+bundler já usada em MercadoDetalhe.jsx.
+const iconeMercado = L.icon({
+  iconUrl: marcadorIcone,
+  iconRetinaUrl: marcadorIcone2x,
+  shadowUrl: marcadorSombra,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+})
+
 
 /**
  * Tela "Explorar mercados" do app do consumidor.
@@ -29,9 +46,14 @@ import './Explorar.css'
  *   por letra digitada. Se a base de mercados crescer muito, aí sim vale
  *   trocar para `.ilike('nome', '%termo%')` direto no Supabase.
  *
- * Botão "Ver no mapa": é só um placeholder visual (abre um aviso, não um
- * mapa de verdade). Um mapa real (Google Maps/Mapbox) fica para uma etapa
- * futura — fora do escopo desta tela, que é validar lista + filtros primeiro.
+ * Botão "Ver no mapa": mapa geral (OpenStreetMap via Leaflet, mesmo padrão
+ * de MercadoDetalhe.jsx) com um marcador para cada mercado que já tem
+ * latitude/longitude cadastrada em PerfilMercado.jsx. Mercados sem
+ * localização cadastrada simplesmente não aparecem no mapa (não dá pra
+ * desenhar um pino sem coordenada) — a lista abaixo do mapa continua
+ * mostrando todos, com ou sem localização. Isso atualiza sozinho conforme
+ * mais mercados parceiros cadastrarem a localização deles, sem precisar de
+ * nenhuma mudança de código.
  *
  * Clique num card de mercado: agora navega para a tela "Mercado (detalhe)"
  * (ver src/pages/MercadoDetalhe.jsx), via o callback onNavigateToMercado.
@@ -59,6 +81,7 @@ function Explorar({
   const [busca, setBusca] = useState('')
   const [filtroProximos, setFiltroProximos] = useState(false)
   const [filtroPromocao, setFiltroPromocao] = useState(false)
+  const [mostrarMapa, setMostrarMapa] = useState(false)
 
   const [mercados, setMercados] = useState([])
   const [marketIdsComPromocao, setMarketIdsComPromocao] = useState(new Set())
@@ -78,7 +101,7 @@ function Explorar({
     // filtro "Mais próximos" só reaplica essa mesma ordenação.
     const { data: mercadosData, error: mercadosError } = await supabase
       .from('market_profiles')
-      .select('id, nome, bairro')
+      .select('id, nome, bairro, latitude, longitude')
       .order('created_at', { ascending: false })
 
     if (mercadosError) {
@@ -131,10 +154,16 @@ function Explorar({
     return lista
   }, [mercados, marketIdsComPromocao, busca, filtroPromocao])
 
-  function handleAbrirMapaPlaceholder() {
-    // Placeholder sem funcionalidade real — só avisa que o mapa ainda não
-    // existe, em vez de o botão não fazer nada visivelmente ao ser tocado.
-    window.alert('Mapa ainda não disponível nesta versão. Em breve!')
+  // Só entram no mapa os mercados com latitude/longitude cadastradas —
+  // atualiza sozinho conforme mais mercados completarem o cadastro em
+  // PerfilMercado.jsx (ver comentário no topo do arquivo).
+  const mercadosComLocalizacao = useMemo(
+    () => mercados.filter((mercado) => mercado.latitude && mercado.longitude),
+    [mercados],
+  )
+
+  function handleAbrirMapa() {
+    setMostrarMapa(true)
   }
 
   function handleAbrirMercado(mercadoId) {
@@ -148,11 +177,73 @@ function Explorar({
         <button
           type="button"
           className="explorar-mapa-botao"
-          onClick={handleAbrirMapaPlaceholder}
+          onClick={handleAbrirMapa}
         >
           Ver no mapa
         </button>
       </header>
+
+      {/* Mapa geral — overlay em tela cheia com um marcador por mercado que
+          já tem localização cadastrada (ver mercadosComLocalizacao acima).
+          Tocar num marcador abre o detalhe daquele mercado, igual ao clique
+          num card da lista. */}
+      {mostrarMapa && (
+        <div className="explorar-mapa-overlay" role="dialog" aria-label="Mapa dos mercados">
+          <header className="explorar-mapa-overlay-topbar">
+            <span className="explorar-mapa-overlay-titulo">Mercados no mapa</span>
+            <button
+              type="button"
+              className="explorar-mapa-overlay-fechar"
+              aria-label="Fechar mapa"
+              onClick={() => setMostrarMapa(false)}
+            >
+              ✕
+            </button>
+          </header>
+
+          {mercadosComLocalizacao.length === 0 ? (
+            <p className="explorar-mapa-overlay-vazio">
+              Nenhum mercado parceiro cadastrou a localização ainda. Volte em breve!
+            </p>
+          ) : (
+            <MapContainer
+              center={[mercadosComLocalizacao[0].latitude, mercadosComLocalizacao[0].longitude]}
+              zoom={13}
+              scrollWheelZoom
+              className="explorar-mapa-overlay-mapa"
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {mercadosComLocalizacao.map((mercado) => (
+                <Marker
+                  key={mercado.id}
+                  position={[mercado.latitude, mercado.longitude]}
+                  icon={iconeMercado}
+                >
+                  <Popup>
+                    <strong>{mercado.nome}</strong>
+                    <br />
+                    {mercado.bairro}
+                    <br />
+                    <button
+                      type="button"
+                      className="explorar-mapa-overlay-popup-botao"
+                      onClick={() => {
+                        setMostrarMapa(false)
+                        handleAbrirMercado(mercado.id)
+                      }}
+                    >
+                      Ver mercado
+                    </button>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+          )}
+        </div>
+      )}
 
       <main className="explorar-content">
         {/* Seletor de abas: "Mercados" (busca original, por nome de

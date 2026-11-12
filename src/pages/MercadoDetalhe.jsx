@@ -1,6 +1,27 @@
 import { useEffect, useState } from 'react'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import L from 'leaflet'
+// IMPORTANTE: o CSS oficial do Leaflet precisa ser importado aqui — sem ele
+// o mapa quebra visualmente (tiles desalinhados, marcador fora do lugar).
+import 'leaflet/dist/leaflet.css'
+import marcadorIcone from 'leaflet/dist/images/marker-icon.png'
+import marcadorIcone2x from 'leaflet/dist/images/marker-icon-2x.png'
+import marcadorSombra from 'leaflet/dist/images/marker-shadow.png'
 import { supabase } from '../lib/supabaseClient'
 import './MercadoDetalhe.css'
+
+// Correção conhecida do Leaflet + bundlers (Vite/Webpack): sem isso, o ícone
+// padrão do marcador não carrega (o bundler não resolve os caminhos de
+// imagem que o Leaflet espera por padrão). Configuramos uma vez aqui,
+// reaproveitando os próprios ícones do pacote leaflet já instalado.
+const iconeMercado = L.icon({
+  iconUrl: marcadorIcone,
+  iconRetinaUrl: marcadorIcone2x,
+  shadowUrl: marcadorSombra,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+})
 
 /**
  * Tela "Mercado (detalhe)" do app do consumidor — abre quando o cliente toca
@@ -300,6 +321,36 @@ function MercadoDetalhe({
         <button type="button" className="mercado-detalhe-rota-botao" onClick={handleTracarRota}>
           <span aria-hidden="true">↗</span> Traçar rota
         </button>
+
+        {/* Mapa embutido — só uma referência visual de onde o mercado fica
+            (OpenStreetMap via Leaflet, gratuito, sem chave de API). Não
+            substitui o botão "Traçar rota" acima, que continua abrindo o
+            Google Maps para navegação de verdade. Se o mercado ainda não
+            cadastrou latitude/longitude (caso mais comum hoje, só um
+            mercado de teste tem isso), mostramos um aviso simples em vez de
+            tentar desenhar um mapa sem coordenadas. */}
+        <section className="mercado-detalhe-mapa">
+          {mercado.latitude && mercado.longitude ? (
+            <MapContainer
+              center={[mercado.latitude, mercado.longitude]}
+              zoom={15}
+              scrollWheelZoom={false}
+              className="mercado-detalhe-mapa-container"
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <Marker position={[mercado.latitude, mercado.longitude]} icon={iconeMercado}>
+                <Popup>{mercado.nome}</Popup>
+              </Marker>
+            </MapContainer>
+          ) : (
+            <p className="mercado-detalhe-mapa-vazio">
+              Localização ainda não cadastrada pelo mercado.
+            </p>
+          )}
+        </section>
 
         {/* Lista de produtos / promoções do mercado */}
         <section className="mercado-detalhe-produtos">
