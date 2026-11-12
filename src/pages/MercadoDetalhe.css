@@ -263,7 +263,9 @@
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .card-produto-mercado-preco {
@@ -271,6 +273,20 @@
   font-weight: 700;
   color: var(--text-h);
   white-space: nowrap;
+}
+
+/* Preço normal riscado + preço promocional em destaque — mesmo padrão já
+   usado em CadastroProdutos.css, do outro lado (painel do mercado). */
+.card-produto-mercado-preco-riscado {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: line-through;
+  white-space: nowrap;
+}
+
+.card-produto-mercado-preco-promocional {
+  color: var(--accent);
 }
 
 /* Indicador de promoção ativa — mesmo estilo de "badge-promocao" já usado

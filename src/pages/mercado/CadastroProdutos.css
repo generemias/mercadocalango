@@ -239,6 +239,20 @@
   color: var(--text-h);
 }
 
+/* Preço normal riscado + preço promocional em destaque, quando o produto
+   está em promoção (ver promocaoEstaAtiva em CadastroProdutos.jsx) — mesmo
+   padrão visual comum em e-commerce para deixar claro o desconto. */
+.card-produto-preco-riscado {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: line-through;
+}
+
+.card-produto-preco-promocional {
+  color: var(--accent);
+}
+
 /* Mesmo visual do selo de promoção já usado na Home do consumidor
    (.badge-promocao em Home.css), para o lojista reconhecer de imediato que
    é a mesma informação que aparece do outro lado (app do consumidor). */

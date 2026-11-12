@@ -45,9 +45,11 @@ import './Home.css'
  *   não é uma distância real. Isso precisa ser revisto quando a regra de
  *   "melhor mercado" (distância + itens em promoção) for implementada de
  *   verdade.
- * - Promoções em destaque: produtos com promocao_validade_fim preenchido
- *   e ainda não vencido. Também vem vazia até algum mercado cadastrar
- *   produtos em promoção — mesma lógica de mensagem amigável.
+ * - Promoções em destaque: produtos com a flag promocao_ativa ligada e
+ *   dentro do range de datas (promocao_inicio/promocao_validade_fim) —
+ *   mostra preco_promocional, não o preço normal (ver migration 004).
+ *   Também vem vazia até algum mercado cadastrar produtos em promoção —
+ *   mesma lógica de mensagem amigável.
  */
 function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil, onNavigateToBuscarProdutos }) {
   // TODO: trocar pelo nome real do usuário logado (via perfil em
@@ -157,11 +159,17 @@ function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil, onN
   async function carregarPromocoesDestaque() {
     const agora = new Date().toISOString()
 
+    // "Em promoção" agora depende da flag promocao_ativa + o range de
+    // datas, não só de uma data de validade preenchida — mesma lógica
+    // usada em Explorar.jsx/MercadoDetalhe.jsx/CadastroProdutos.jsx (ver
+    // migration 004). Mostramos preco_promocional (o preço com desconto),
+    // não mais `preco` (que agora é sempre o preço normal/cheio).
     const { data, error } = await supabase
       .from('products')
-      .select('id, nome, preco, market_id, market_profiles(nome)')
-      .not('promocao_validade_fim', 'is', null)
-      .gt('promocao_validade_fim', agora)
+      .select('id, nome, preco_promocional, market_id, market_profiles(nome)')
+      .eq('promocao_ativa', true)
+      .or(`promocao_inicio.is.null,promocao_inicio.lte.${agora}`)
+      .or(`promocao_validade_fim.is.null,promocao_validade_fim.gte.${agora}`)
       .order('created_at', { ascending: false })
       .limit(5)
 
@@ -279,7 +287,7 @@ function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil, onN
                     <span className="card-promocao-mercado">{produto.market_profiles?.nome}</span>
                   </div>
                   <span className="card-promocao-preco">
-                    {Number(produto.preco).toLocaleString('pt-BR', {
+                    {Number(produto.preco_promocional).toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     })}

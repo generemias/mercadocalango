@@ -118,12 +118,14 @@ function MercadoDetalhe({
         .catch(() => {})
     }
 
-    // Produtos do mercado, com a mesma lógica de "tem promoção ativa" já
-    // usada em Explorar.jsx: promocao_validade_fim preenchida e no futuro.
+    // Produtos do mercado. "Em promoção" agora depende da flag
+    // promocao_ativa + o range de datas (promocao_inicio/validade_fim), não
+    // só de uma data de validade estar preenchida — mesma lógica usada em
+    // Explorar.jsx e CadastroProdutos.jsx (ver migration 004).
     const agora = new Date().toISOString()
     const { data: produtosData, error: produtosError } = await supabase
       .from('products')
-      .select('id, nome, categoria, marca, peso, preco, promocao_validade_fim')
+      .select('id, nome, categoria, marca, peso, preco, promocao_ativa, preco_promocional, promocao_inicio, promocao_validade_fim')
       .eq('market_id', mercadoId)
       .order('created_at', { ascending: true })
 
@@ -131,7 +133,9 @@ function MercadoDetalhe({
       const listaProdutos = (produtosData ?? []).map((produto) => ({
         ...produto,
         emPromocao: Boolean(
-          produto.promocao_validade_fim && produto.promocao_validade_fim > agora,
+          produto.promocao_ativa &&
+            (!produto.promocao_inicio || produto.promocao_inicio <= agora) &&
+            (!produto.promocao_validade_fim || produto.promocao_validade_fim >= agora),
         ),
       }))
       setProdutos(listaProdutos)
@@ -374,12 +378,26 @@ function MercadoDetalhe({
                   </div>
                   <div className="card-produto-mercado-direita">
                     {produto.emPromocao && <span className="badge-promocao">Promoção</span>}
-                    <span className="card-produto-mercado-preco">
-                      {Number(produto.preco).toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      })}
-                    </span>
+                    {produto.emPromocao ? (
+                      <>
+                        <span className="card-produto-mercado-preco-riscado">
+                          {Number(produto.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </span>
+                        <span className="card-produto-mercado-preco card-produto-mercado-preco-promocional">
+                          {Number(produto.preco_promocional).toLocaleString('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          })}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="card-produto-mercado-preco">
+                        {Number(produto.preco).toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        })}
+                      </span>
+                    )}
                   </div>
                 </li>
               ))}

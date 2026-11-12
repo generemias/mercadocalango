@@ -16,7 +16,9 @@ import './CadastroProdutos.css'
  * alternar entre "Produtos" e "Dashboard" sem precisar logar de novo.
  *
  * Integração real com Supabase (tabela `products`, ver schema: id,
- * market_id, nome, categoria, preco, imagem_url, promocao_validade_fim):
+ * market_id, nome, categoria, marca, peso, preco, imagem_url,
+ * promocao_ativa, preco_promocional, promocao_inicio,
+ * promocao_validade_fim — ver migrations 003 e 004):
  * - Ao montar: supabase.auth.getUser() dá o id do mercado logado (mesmo id
  *   de market_profiles, confirmado em LoginMercado.jsx). Com esse id,
  *   busca o nome do mercado (market_profiles) e a lista de produtos
@@ -63,6 +65,13 @@ const FORM_VAZIO = {
   peso: '',
   preco: '',
   imagem_url: '',
+  // Promoção: antes era só uma data de validade (o preço cadastrado já era
+  // o preço promocional). Agora é uma flag explícita + preço promocional
+  // separado do preço normal + range de datas (ver migration 004 e
+  // promocaoEstaAtiva mais abaixo).
+  promocao_ativa: false,
+  preco_promocional: '',
+  promocao_inicio: '',
   promocao_validade_fim: '',
 }
 
@@ -84,16 +93,24 @@ function formatarPreco(preco) {
 }
 
 function formatarData(dataIso) {
-  // new Date('YYYY-MM-DD') é interpretado em UTC; forçamos meio-dia local
-  // pra evitar o produto mostrar um dia a menos/mais por fuso horário.
-  const [ano, mes, dia] = dataIso.split('-')
-  return `${dia}/${mes}/${ano}`
+  // Aceita tanto "YYYY-MM-DD" (o que o <input type="date"> dá) quanto um
+  // timestamptz completo (o que volta do banco, ex: produto.promocao_inicio)
+  // — toLocaleDateString com timeZone 'UTC' lê os dois certo, sem o
+  // problema de o produto mostrar um dia a menos/mais por fuso horário.
+  return new Date(dataIso).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
 }
 
-function promocaoEstaAtiva(dataIso) {
-  if (!dataIso) return false
-  const hojeIso = new Date().toISOString().slice(0, 10)
-  return dataIso >= hojeIso
+// Promoção agora é uma flag explícita (promocao_ativa) + um range de datas
+// (promocao_inicio / promocao_validade_fim), em vez de só inferir pela
+// presença de uma data de validade (ver migration 004). A promoção só conta
+// como "ativa" se a flag estiver ligada E a data de hoje estiver dentro do
+// range (quando um dos dois lados do range existir).
+function promocaoEstaAtiva(produto) {
+  if (!produto.promocao_ativa) return false
+  const agoraIso = new Date().toISOString()
+  if (produto.promocao_inicio && produto.promocao_inicio > agoraIso) return false
+  if (produto.promocao_validade_fim && produto.promocao_validade_fim < agoraIso) return false
+  return true
 }
 
 function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair }) {
@@ -155,7 +172,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
 
     const { data: produtosExistentes, error: erroProdutos } = await supabase
       .from('products')
-      .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_validade_fim')
+      .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_ativa, preco_promocional, promocao_inicio, promocao_validade_fim')
       .eq('market_id', idMercado)
       .order('created_at', { ascending: false })
 
@@ -196,7 +213,13 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
       peso: produto.peso ?? '',
       preco: String(produto.preco),
       imagem_url: produto.imagem_url ?? '',
-      promocao_validade_fim: produto.promocao_validade_fim ?? '',
+      promocao_ativa: produto.promocao_ativa ?? false,
+      preco_promocional: produto.preco_promocional != null ? String(produto.preco_promocional) : '',
+      // <input type="date"> exige "YYYY-MM-DD"; o banco devolve um
+      // timestamptz completo (ex: "2026-11-15T00:00:00+00:00") — os 10
+      // primeiros caracteres já são a data que o input precisa.
+      promocao_inicio: produto.promocao_inicio ? produto.promocao_inicio.slice(0, 10) : '',
+      promocao_validade_fim: produto.promocao_validade_fim ? produto.promocao_validade_fim.slice(0, 10) : '',
     })
     setErroForm('')
     setModoFormulario(produto.id)
@@ -227,6 +250,34 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
       return
     }
 
+    // Validação da promoção: só entra em jogo quando a flag está ligada —
+    // os três campos (preço promocional, início, fim) são obrigatórios
+    // juntos, porque uma promoção sem um deles não faz sentido (sem preço
+    // não há desconto pra mostrar; sem range não sabemos quando ela vale).
+    let precoPromocionalNumero = null
+    if (form.promocao_ativa) {
+      if (!form.preco_promocional || !form.promocao_inicio || !form.promocao_validade_fim) {
+        setErroForm('Preencha preço promocional, início e fim da promoção, ou desligue a promoção.')
+        return
+      }
+
+      precoPromocionalNumero = Number(form.preco_promocional.replace(',', '.'))
+      if (Number.isNaN(precoPromocionalNumero) || precoPromocionalNumero <= 0) {
+        setErroForm('Digite um preço promocional válido (ex: 9.90).')
+        return
+      }
+
+      if (precoPromocionalNumero >= precoNumero) {
+        setErroForm('O preço promocional precisa ser menor que o preço normal.')
+        return
+      }
+
+      if (form.promocao_inicio > form.promocao_validade_fim) {
+        setErroForm('A data de início da promoção não pode ser depois da data de fim.')
+        return
+      }
+    }
+
     if (!marketId) {
       setErroForm('Não foi possível identificar seu mercado. Tente entrar novamente.')
       return
@@ -239,7 +290,10 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
       peso: form.peso.trim() || null,
       preco: precoNumero,
       imagem_url: form.imagem_url.trim(),
-      promocao_validade_fim: form.promocao_validade_fim || null,
+      promocao_ativa: form.promocao_ativa,
+      preco_promocional: form.promocao_ativa ? precoPromocionalNumero : null,
+      promocao_inicio: form.promocao_ativa ? form.promocao_inicio : null,
+      promocao_validade_fim: form.promocao_ativa ? form.promocao_validade_fim : null,
     }
 
     setSalvando(true)
@@ -255,7 +309,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
         .update(dadosProduto)
         .eq('id', modoFormulario)
         .eq('market_id', marketId)
-        .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_validade_fim')
+        .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_ativa, preco_promocional, promocao_inicio, promocao_validade_fim')
         .single()
 
       if (error || !data) {
@@ -269,7 +323,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
       const { data, error } = await supabase
         .from('products')
         .insert({ market_id: marketId, ...dadosProduto })
-        .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_validade_fim')
+        .select('id, nome, categoria, marca, peso, preco, imagem_url, promocao_ativa, preco_promocional, promocao_inicio, promocao_validade_fim')
         .single()
 
       if (error || !data) {
@@ -384,7 +438,7 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
             ) : (
               <ul className="mercado-lista-produtos">
                 {produtos.map((produto) => {
-                  const emPromocao = promocaoEstaAtiva(produto.promocao_validade_fim)
+                  const emPromocao = promocaoEstaAtiva(produto)
 
                   return (
                     <li key={produto.id} className="card-produto">
@@ -404,11 +458,20 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
                           {produto.peso && ` · ${produto.peso}`}
                         </span>
                         <div className="card-produto-linha-preco">
-                          <span className="card-produto-preco">{formatarPreco(produto.preco)}</span>
-                          {emPromocao && (
-                            <span className="badge-promocao">
-                              Em promoção até {formatarData(produto.promocao_validade_fim)}
-                            </span>
+                          {emPromocao ? (
+                            <>
+                              <span className="card-produto-preco card-produto-preco-riscado">
+                                {formatarPreco(produto.preco)}
+                              </span>
+                              <span className="card-produto-preco card-produto-preco-promocional">
+                                {formatarPreco(produto.preco_promocional)}
+                              </span>
+                              <span className="badge-promocao">
+                                Até {formatarData(produto.promocao_validade_fim)}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="card-produto-preco">{formatarPreco(produto.preco)}</span>
                           )}
                         </div>
                       </div>
@@ -562,23 +625,74 @@ function CadastroProdutos({ onNavigateToDashboard, onNavigateToPerfil, onSair })
                 <span className="field-hint">Cole o link de uma imagem do produto. Deixe em branco se não tiver.</span>
               </div>
 
-              <div className="field">
-                <label className="field-label" htmlFor="produto-validade">
-                  Promoção válida até (opcional)
-                </label>
+              <label className="checkbox-row">
                 <input
-                  id="produto-validade"
-                  type="date"
-                  className="field-input"
-                  value={form.promocao_validade_fim}
+                  type="checkbox"
+                  checked={form.promocao_ativa}
                   onChange={(event) =>
-                    setForm((atual) => ({ ...atual, promocao_validade_fim: event.target.value }))
+                    setForm((atual) => ({ ...atual, promocao_ativa: event.target.checked }))
                   }
                 />
-                <span className="field-hint">
-                  Deixe em branco se o produto não estiver em promoção agora.
-                </span>
-              </div>
+                <span>Este produto está em promoção</span>
+              </label>
+
+              {form.promocao_ativa && (
+                <>
+                  <div className="field">
+                    <label className="field-label" htmlFor="produto-preco-promocional">
+                      Preço promocional (R$)
+                    </label>
+                    <input
+                      id="produto-preco-promocional"
+                      type="text"
+                      inputMode="decimal"
+                      className="field-input"
+                      placeholder="ex: 19,90"
+                      value={form.preco_promocional}
+                      onChange={(event) =>
+                        setForm((atual) => ({ ...atual, preco_promocional: event.target.value }))
+                      }
+                      onBlur={(event) =>
+                        setForm((atual) => ({ ...atual, preco_promocional: completarCentavos(event.target.value) }))
+                      }
+                      required={form.promocao_ativa}
+                    />
+                    <span className="field-hint">Precisa ser menor que o preço normal, cadastrado acima.</span>
+                  </div>
+
+                  <div className="field">
+                    <label className="field-label" htmlFor="produto-promocao-inicio">
+                      Promoção válida de
+                    </label>
+                    <input
+                      id="produto-promocao-inicio"
+                      type="date"
+                      className="field-input"
+                      value={form.promocao_inicio}
+                      onChange={(event) =>
+                        setForm((atual) => ({ ...atual, promocao_inicio: event.target.value }))
+                      }
+                      required={form.promocao_ativa}
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label className="field-label" htmlFor="produto-validade">
+                      Até
+                    </label>
+                    <input
+                      id="produto-validade"
+                      type="date"
+                      className="field-input"
+                      value={form.promocao_validade_fim}
+                      onChange={(event) =>
+                        setForm((atual) => ({ ...atual, promocao_validade_fim: event.target.value }))
+                      }
+                      required={form.promocao_ativa}
+                    />
+                  </div>
+                </>
+              )}
 
               {erroForm && <span className="form-error">{erroForm}</span>}
 

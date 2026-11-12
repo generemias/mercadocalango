@@ -118,12 +118,19 @@ function Explorar({
       const agora = new Date().toISOString()
       const idsMercados = listaMercados.map((mercado) => mercado.id)
 
+      // "Tem promoção" agora depende da flag promocao_ativa + o range de
+      // datas (promocao_inicio/promocao_validade_fim), não só de uma data
+      // de validade preenchida — mesma lógica usada em
+      // MercadoDetalhe.jsx/CadastroProdutos.jsx (ver migration 004). Cada
+      // .or() abaixo é um grupo "OR" independente; passados em chamadas
+      // separadas, o Supabase aplica os dois grupos com "E" entre eles.
       const { data: produtosPromocao, error: produtosError } = await supabase
         .from('products')
         .select('market_id')
         .in('market_id', idsMercados)
-        .not('promocao_validade_fim', 'is', null)
-        .gt('promocao_validade_fim', agora)
+        .eq('promocao_ativa', true)
+        .or(`promocao_inicio.is.null,promocao_inicio.lte.${agora}`)
+        .or(`promocao_validade_fim.is.null,promocao_validade_fim.gte.${agora}`)
 
       if (!produtosError) {
         setMarketIdsComPromocao(new Set((produtosPromocao ?? []).map((produto) => produto.market_id)))
