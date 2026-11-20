@@ -6,6 +6,8 @@ import marcadorIcone from 'leaflet/dist/images/marker-icon.png'
 import marcadorIcone2x from 'leaflet/dist/images/marker-icon-2x.png'
 import marcadorSombra from 'leaflet/dist/images/marker-shadow.png'
 import { supabase } from '../lib/supabaseClient'
+import { calcularDistanciaKm, formatarDistancia } from '../lib/distancia'
+import { obterLocalizacaoAtual } from '../lib/geolocalizacao'
 import BuscaProdutos from './BuscaProdutos'
 import './Explorar.css'
 
@@ -34,11 +36,13 @@ const iconeMercado = L.icon({
  *   promocao_validade_fim no futuro. Monta-se um Set de market_id com
  *   promoção ativa — mais simples que um join/count para o tamanho de dados
  *   deste MVP.
- * - "Mais próximos" / distância: igual à SIMPLIFICAÇÃO TEMPORÁRIA já usada
- *   na Home — ainda não coletamos a localização do consumidor, então não dá
- *   pra calcular distância real. Enquanto isso não existir, o filtro só
- *   reordena pelos mercados mais recentes (created_at desc) e NÃO mostra
- *   nenhum valor de "km" fictício na tela.
+ * - "Mais próximos" / distância: regra real implementada (mesma de
+ *   Home.jsx — ver src/lib/distancia.js e src/lib/geolocalizacao.js).
+ *   Geolocalização só é pedida se o consumidor aceitou isso no cadastro
+ *   (consumer_profiles.aceite_localizacao). Sem coordenada (negada,
+ *   indisponível, ou mercado sem latitude/longitude cadastrada), o filtro
+ *   simplesmente não reordena aquele mercado por distância — ele fica no
+ *   fim da lista, sem quebrar a tela.
  * - Busca por nome: decidimos filtrar no front-end sobre a lista já
  *   carregada (igual já estava), e não com `.ilike` a cada tecla digitada.
  *   Para o tamanho esperado do piloto (poucos mercados parceiros), buscar
@@ -96,9 +100,22 @@ function Explorar({
     setCarregando(true)
     setErro(null)
 
-    // SIMPLIFICAÇÃO TEMPORÁRIA: sem localização do consumidor ainda, então
-    // sempre buscamos por mais recentes primeiro (mesma lógica da Home). O
-    // filtro "Mais próximos" só reaplica essa mesma ordenação.
+    // Geolocalização: só pedimos se o consumidor aceitou isso no cadastro
+    // (aceite_localizacao) — mesma checagem/motivo de Home.jsx.
+    const { data: userData } = await supabase.auth.getUser()
+    let localizacao = null
+    if (userData?.user) {
+      const { data: perfilConsumidor } = await supabase
+        .from('consumer_profiles')
+        .select('aceite_localizacao')
+        .eq('id', userData.user.id)
+        .maybeSingle()
+
+      if (perfilConsumidor?.aceite_localizacao) {
+        localizacao = await obterLocalizacaoAtual()
+      }
+    }
+
     const { data: mercadosData, error: mercadosError } = await supabase
       .from('market_profiles')
       .select('id, nome, bairro, latitude, longitude')
@@ -111,7 +128,17 @@ function Explorar({
       return
     }
 
-    const listaMercados = mercadosData ?? []
+    // Distância calculada uma vez aqui (não a cada filtro) — fica null
+    // quando não há localização do consumidor ou do mercado, e nesse caso o
+    // mercado só não entra na ordenação por distância (ver
+    // mercadosFiltrados), sem quebrar a tela.
+    const listaMercados = (mercadosData ?? []).map((mercado) => ({
+      ...mercado,
+      distanciaKm:
+        localizacao && mercado.latitude && mercado.longitude
+          ? calcularDistanciaKm(localizacao.latitude, localizacao.longitude, mercado.latitude, mercado.longitude)
+          : null,
+    }))
     setMercados(listaMercados)
 
     if (listaMercados.length > 0) {
@@ -155,11 +182,19 @@ function Explorar({
       lista = lista.filter((mercado) => mercado.temPromocao)
     }
 
-    // "Mais próximos" não reordena de verdade (ver aviso no topo do
-    // arquivo) — a lista já vem ordenada por mais recentes do carregamento.
+    // "Mais próximos": reordena pela distância real (ver carregarMercados).
+    // Mercados sem distância calculada ficam no fim, sem travar os que têm
+    // dado completo.
+    if (filtroProximos) {
+      lista = [...lista].sort((mercadoA, mercadoB) => {
+        if (mercadoA.distanciaKm == null) return 1
+        if (mercadoB.distanciaKm == null) return -1
+        return mercadoA.distanciaKm - mercadoB.distanciaKm
+      })
+    }
 
     return lista
-  }, [mercados, marketIdsComPromocao, busca, filtroPromocao])
+  }, [mercados, marketIdsComPromocao, busca, filtroPromocao, filtroProximos])
 
   // Só entram no mapa os mercados com latitude/longitude cadastradas —
   // atualiza sozinho conforme mais mercados completarem o cadastro em
@@ -359,7 +394,10 @@ function Explorar({
                     >
                       <div className="card-mercado-explorar-info">
                         <span className="card-mercado-explorar-nome">{mercado.nome}</span>
-                        <span className="card-mercado-explorar-local">{mercado.bairro}</span>
+                        <span className="card-mercado-explorar-local">
+                          {mercado.bairro}
+                          {mercado.distanciaKm != null && ` · ${formatarDistancia(mercado.distanciaKm)}`}
+                        </span>
                       </div>
                       {mercado.temPromocao && (
                         <span className="badge-promocao">Promoção</span>

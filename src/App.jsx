@@ -281,6 +281,10 @@ function App() {
           setAbaExplorarInicial('produtos')
           setTela('explorar')
         }}
+        onNavigateToMercado={(mercadoId) => {
+          setMercadoSelecionadoId(mercadoId)
+          setTela('mercado-detalhe')
+        }}
       />
     )
   }

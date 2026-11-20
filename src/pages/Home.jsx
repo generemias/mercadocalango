@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { calcularDistanciaKm, formatarDistancia } from '../lib/distancia'
+import { obterLocalizacaoAtual } from '../lib/geolocalizacao'
 import './Home.css'
 
 /**
@@ -35,23 +37,36 @@ import './Home.css'
  * - Resumo da lista: reaproveita a mesma lógica da tela Lista.jsx (busca a
  *   lista do consumidor logado, criando uma lista padrão se ainda não
  *   existir nenhuma) só para mostrar "Faltam X de Y itens".
- * - Mercados próximos: hoje ainda não existe nenhum mercado parceiro
- *   cadastrado no banco (ninguém usou o painel do mercado ainda), então é
- *   esperado que esta lista venha vazia por enquanto. Quando vier vazia,
- *   mostramos uma mensagem amigável em vez de uma seção quebrada/sumida.
- *   SIMPLIFICAÇÃO TEMPORÁRIA: como ainda não usamos a localização do
- *   consumidor em nenhuma consulta, "próximos" por enquanto só lista os
- *   mercados mais recentes cadastrados (ordenado por created_at desc) —
- *   não é uma distância real. Isso precisa ser revisto quando a regra de
- *   "melhor mercado" (distância + itens em promoção) for implementada de
- *   verdade.
+ * - Mercados próximos / Melhor mercado para você: regra real implementada
+ *   (pedido do CEO) — distância (fórmula de Haversine, ver
+ *   src/lib/distancia.js, a partir da geolocalização do navegador, ver
+ *   src/lib/geolocalizacao.js) + quantos itens AINDA PENDENTES da lista de
+ *   compras ativa do consumidor batem com produtos em promoção daquele
+ *   mercado (comparação simples de texto — nome do item contido no nome do
+ *   produto ou vice-versa, sem IA/matching semântico, conforme decisão do
+ *   CEO de ser "regra simples, não IA preditiva"). Pontuação: mercados com
+ *   mais itens da lista em promoção vêm primeiro; empate é desfeito pela
+ *   distância mais perto. O 1º colocado vira o card "Mercado recomendado
+ *   para você"; a lista "Mercados próximos" reaproveita a mesma ordenação.
+ *   Geolocalização só é pedida se o consumidor aceitou isso no cadastro
+ *   (consumer_profiles.aceite_localizacao) — ver carregarMercadosProximos.
+ *   Sem coordenada (geolocalização negada/indisponível, ou mercado sem
+ *   latitude/longitude cadastrada) a distância fica null e esse mercado
+ *   simplesmente não entra na comparação por distância, só pela contagem
+ *   de promoções — nunca quebra a tela, só mostra menos informação.
  * - Promoções em destaque: produtos com a flag promocao_ativa ligada e
  *   dentro do range de datas (promocao_inicio/promocao_validade_fim) —
  *   mostra preco_promocional, não o preço normal (ver migration 004).
  *   Também vem vazia até algum mercado cadastrar produtos em promoção —
  *   mesma lógica de mensagem amigável.
  */
-function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil, onNavigateToBuscarProdutos }) {
+function Home({
+  onNavigateToLista,
+  onNavigateToExplorar,
+  onNavigateToPerfil,
+  onNavigateToBuscarProdutos,
+  onNavigateToMercado,
+}) {
   // TODO: trocar pelo nome real do usuário logado (via perfil em
   // consumer_profiles) quando a tela de Perfil existir e essa informação
   // for necessária em mais lugares. Por enquanto a Home não depende disso
@@ -60,6 +75,10 @@ function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil, onN
 
   const [resumoLista, setResumoLista] = useState(null)
   const [mercadosProximos, setMercadosProximos] = useState([])
+  // 1º colocado da mesma ordenação de mercadosProximos — ver comentário no
+  // topo do arquivo sobre a regra de "melhor mercado". Null enquanto
+  // carrega ou se não há nenhum mercado com dado suficiente pra comparar.
+  const [mercadoRecomendado, setMercadoRecomendado] = useState(null)
   const [promocoesDestaque, setPromocoesDestaque] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(null)
@@ -83,7 +102,7 @@ function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil, onN
 
     await Promise.all([
       carregarResumoLista(consumerId),
-      carregarMercadosProximos(),
+      carregarMercadosProximos(consumerId),
       carregarPromocoesDestaque(),
     ])
 
@@ -138,22 +157,116 @@ function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil, onN
     setResumoLista({ nome: lista.nome, totalItens, itensFaltando })
   }
 
-  async function carregarMercadosProximos() {
-    // SIMPLIFICAÇÃO TEMPORÁRIA: sem regra de distância ainda, listamos os
-    // mercados mais recentes como placeholder de "próximos" (ver
-    // explicação no comentário do topo do arquivo).
-    const { data, error } = await supabase
-      .from('market_profiles')
-      .select('id, nome')
-      .order('created_at', { ascending: false })
-      .limit(5)
+  async function carregarMercadosProximos(consumerId) {
+    // 1) Geolocalização: só pedimos se o consumidor aceitou isso no
+    // cadastro (aceite_localizacao) — pedir sem ter esse consentimento
+    // mostraria o popup do navegador sem explicação nenhuma.
+    const { data: perfilConsumidor } = await supabase
+      .from('consumer_profiles')
+      .select('aceite_localizacao')
+      .eq('id', consumerId)
+      .maybeSingle()
 
-    if (error) {
+    const localizacao = perfilConsumidor?.aceite_localizacao ? await obterLocalizacaoAtual() : null
+
+    // 2) Mercados com localização cadastrada (sem isso não dá pra calcular
+    // distância nenhuma, mas o mercado ainda entra na lista/pontuação por
+    // promoção).
+    const { data: mercadosData, error: erroMercados } = await supabase
+      .from('market_profiles')
+      .select('id, nome, bairro, latitude, longitude')
+      .order('created_at', { ascending: false })
+
+    if (erroMercados || !mercadosData) {
       setMercadosProximos([])
+      setMercadoRecomendado(null)
       return
     }
 
-    setMercadosProximos(data ?? [])
+    // 3) Itens AINDA PENDENTES (não comprados) da primeira lista do
+    // consumidor — são o que ele realmente precisa comprar agora, por isso
+    // só esses entram na comparação com promoções.
+    const { data: listasExistentes } = await supabase
+      .from('shopping_lists')
+      .select('id')
+      .eq('consumer_id', consumerId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+
+    let nomesItensPendentes = []
+    if (listasExistentes?.[0]) {
+      const { data: itensPendentes } = await supabase
+        .from('shopping_list_items')
+        .select('nome_item')
+        .eq('list_id', listasExistentes[0].id)
+        .eq('comprado', false)
+
+      nomesItensPendentes = (itensPendentes ?? []).map((item) => item.nome_item.toLowerCase())
+    }
+
+    // 4) Produtos em promoção ativa AGORA, em qualquer mercado (mesma regra
+    // de promocaoEstaAtiva já usada em CadastroProdutos.jsx/
+    // MercadoDetalhe.jsx/Explorar.jsx — aqui aplicada direto na consulta).
+    const agora = new Date().toISOString()
+    const { data: produtosPromocao } = await supabase
+      .from('products')
+      .select('nome, market_id')
+      .eq('promocao_ativa', true)
+      .or(`promocao_inicio.is.null,promocao_inicio.lte.${agora}`)
+      .or(`promocao_validade_fim.is.null,promocao_validade_fim.gte.${agora}`)
+
+    // 5) Pontuação por mercado: quantos itens pendentes da lista "batem"
+    // (nome do item contido no nome do produto, ou o contrário — texto
+    // simples, sem IA) com algum produto em promoção DAQUELE mercado.
+    function contarItensEmPromocao(marketId) {
+      if (nomesItensPendentes.length === 0) return 0
+
+      const produtosDoMercado = (produtosPromocao ?? []).filter((produto) => produto.market_id === marketId)
+      if (produtosDoMercado.length === 0) return 0
+
+      return nomesItensPendentes.filter((nomeItem) =>
+        produtosDoMercado.some((produto) => {
+          const nomeProduto = produto.nome.toLowerCase()
+          return nomeProduto.includes(nomeItem) || nomeItem.includes(nomeProduto)
+        }),
+      ).length
+    }
+
+    const mercadosComPontuacao = mercadosData.map((mercado) => {
+      const temCoordenadas = localizacao && mercado.latitude && mercado.longitude
+      const distanciaKm = temCoordenadas
+        ? calcularDistanciaKm(localizacao.latitude, localizacao.longitude, mercado.latitude, mercado.longitude)
+        : null
+
+      return {
+        ...mercado,
+        distanciaKm,
+        itensEmPromocao: contarItensEmPromocao(mercado.id),
+      }
+    })
+
+    // Mais itens da lista em promoção primeiro; empate desfeito pela
+    // distância mais perto (mercados sem distância calculada ficam por
+    // último dentro do empate, não travam os que têm dado completo).
+    mercadosComPontuacao.sort((mercadoA, mercadoB) => {
+      if (mercadoB.itensEmPromocao !== mercadoA.itensEmPromocao) {
+        return mercadoB.itensEmPromocao - mercadoA.itensEmPromocao
+      }
+      if (mercadoA.distanciaKm == null) return 1
+      if (mercadoB.distanciaKm == null) return -1
+      return mercadoA.distanciaKm - mercadoB.distanciaKm
+    })
+
+    setMercadosProximos(mercadosComPontuacao.slice(0, 5))
+
+    // Só mostra o destaque "Mercado recomendado" quando há algo real pra
+    // recomendar (pelo menos 1 item da lista em promoção OU uma distância
+    // calculada) — sem isso, seria só o mercado mais recente de novo,
+    // igual ao comportamento antigo, e não uma recomendação de verdade.
+    const primeiroColocado = mercadosComPontuacao[0]
+    const temRecomendacaoReal =
+      primeiroColocado && (primeiroColocado.itensEmPromocao > 0 || primeiroColocado.distanciaKm != null)
+    setMercadoRecomendado(temRecomendacaoReal ? primeiroColocado : null)
   }
 
   async function carregarPromocoesDestaque() {
@@ -228,6 +341,35 @@ function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil, onN
           </button>
         </section>
 
+        {/* 1.5 Mercado recomendado para você — regra de "melhor mercado"
+            (distância + itens da lista em promoção, ver comentário no topo
+            do arquivo). Só aparece quando há uma recomendação de verdade
+            pra mostrar (ver temRecomendacaoReal em carregarMercadosProximos),
+            nunca um placeholder vazio. */}
+        {!carregando && mercadoRecomendado && (
+          <section className="home-section">
+            <button
+              type="button"
+              className="card-recomendado"
+              onClick={() => onNavigateToMercado?.(mercadoRecomendado.id)}
+            >
+              <span className="card-recomendado-eyebrow">Mercado recomendado para você</span>
+              <span className="card-recomendado-nome">{mercadoRecomendado.nome}</span>
+              <span className="card-recomendado-motivo">
+                {mercadoRecomendado.itensEmPromocao > 0 && (
+                  <>
+                    {mercadoRecomendado.itensEmPromocao}{' '}
+                    {mercadoRecomendado.itensEmPromocao === 1 ? 'item da sua lista' : 'itens da sua lista'} em
+                    promoção
+                  </>
+                )}
+                {mercadoRecomendado.itensEmPromocao > 0 && mercadoRecomendado.distanciaKm != null && ' · '}
+                {mercadoRecomendado.distanciaKm != null && `a ${formatarDistancia(mercadoRecomendado.distanciaKm)}`}
+              </span>
+            </button>
+          </section>
+        )}
+
         {/* 2. Mercados próximos */}
         <section className="home-section">
           <div className="home-section-header">
@@ -244,8 +386,19 @@ function Home({ onNavigateToLista, onNavigateToExplorar, onNavigateToPerfil, onN
           ) : (
             <div className="mercados-scroll">
               {mercadosProximos.map((mercado) => (
-                <button type="button" key={mercado.id} className="card-mercado" onClick={onNavigateToExplorar}>
+                <button
+                  type="button"
+                  key={mercado.id}
+                  className="card-mercado"
+                  onClick={() => onNavigateToMercado?.(mercado.id)}
+                >
                   <span className="card-mercado-nome">{mercado.nome}</span>
+                  <span className="card-mercado-distancia">
+                    {mercado.distanciaKm != null
+                      ? formatarDistancia(mercado.distanciaKm)
+                      : mercado.bairro}
+                    {mercado.itensEmPromocao > 0 && ` · ${mercado.itensEmPromocao} em promoção`}
+                  </span>
                 </button>
               ))}
             </div>

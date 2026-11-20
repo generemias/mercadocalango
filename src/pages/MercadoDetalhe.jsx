@@ -8,6 +8,8 @@ import marcadorIcone from 'leaflet/dist/images/marker-icon.png'
 import marcadorIcone2x from 'leaflet/dist/images/marker-icon-2x.png'
 import marcadorSombra from 'leaflet/dist/images/marker-shadow.png'
 import { supabase } from '../lib/supabaseClient'
+import { calcularDistanciaKm, formatarDistancia } from '../lib/distancia'
+import { obterLocalizacaoAtual } from '../lib/geolocalizacao'
 import './MercadoDetalhe.css'
 
 // Correção conhecida do Leaflet + bundlers (Vite/Webpack): sem isso, o ícone
@@ -47,9 +49,12 @@ const iconeMercado = L.icon({
  *    o Google Maps com a rota; se não tiver (esperado hoje, nenhum mercado
  *    real cadastrou essas colunas ainda), mostra um aviso em vez de abrir um
  *    link quebrado.
- * 5. "Distância": SIMPLIFICAÇÃO TEMPORÁRIA — continua "a definir", mesma
- *    decisão já aceita em Home/Explorar, porque ainda não coletamos a
- *    localização do consumidor.
+ * 5. "Distância": regra real implementada (mesma de Home.jsx/Explorar.jsx —
+ *    ver src/lib/distancia.js e src/lib/geolocalizacao.js). Geolocalização
+ *    só é pedida se o consumidor aceitou isso no cadastro
+ *    (consumer_profiles.aceite_localizacao); sem coordenada (negada,
+ *    indisponível, ou mercado sem latitude/longitude cadastrada), volta a
+ *    mostrar "a definir" em vez de quebrar a tela.
  */
 function MercadoDetalhe({
   mercadoId,
@@ -60,6 +65,7 @@ function MercadoDetalhe({
   onNavigateToPerfil,
 }) {
   const [mercado, setMercado] = useState(null)
+  const [distanciaKm, setDistanciaKm] = useState(null)
   const [produtos, setProdutos] = useState([])
   const [favoritado, setFavoritado] = useState(false)
   const [carregando, setCarregando] = useState(true)
@@ -100,11 +106,37 @@ function MercadoDetalhe({
     }
 
     setMercado(mercadoData)
+    setDistanciaKm(null)
 
     // Usuário autenticado: reaproveitado tanto para registrar a
     // visualização (telemetria do dashboard do mercado) quanto para checar
     // o favorito mais abaixo, em vez de chamar getUser() duas vezes.
     const { data: userData } = await supabase.auth.getUser()
+
+    // Distância real: só pede geolocalização se o consumidor aceitou isso
+    // no cadastro (aceite_localizacao) e o mercado tem coordenadas — mesma
+    // checagem/motivo de Home.jsx/Explorar.jsx.
+    if (userData?.user && mercadoData.latitude && mercadoData.longitude) {
+      const { data: perfilConsumidor } = await supabase
+        .from('consumer_profiles')
+        .select('aceite_localizacao')
+        .eq('id', userData.user.id)
+        .maybeSingle()
+
+      if (perfilConsumidor?.aceite_localizacao) {
+        const localizacao = await obterLocalizacaoAtual()
+        if (localizacao) {
+          setDistanciaKm(
+            calcularDistanciaKm(
+              localizacao.latitude,
+              localizacao.longitude,
+              mercadoData.latitude,
+              mercadoData.longitude,
+            ),
+          )
+        }
+      }
+    }
 
     // Registro de visualização do mercado (market_views), usado pelo
     // Dashboard do mercado (DashboardMercado.jsx). É telemetria: "fire and
@@ -308,9 +340,9 @@ function MercadoDetalhe({
             <span className="mercado-detalhe-meta-separador" aria-hidden="true">
               ·
             </span>
-            {/* SIMPLIFICAÇÃO TEMPORÁRIA: sem localização do consumidor
-                ainda, mesma decisão já aceita em Home/Explorar. */}
-            <span className="mercado-detalhe-meta-item">a definir</span>
+            <span className="mercado-detalhe-meta-item">
+              {distanciaKm != null ? formatarDistancia(distanciaKm) : 'a definir'}
+            </span>
           </div>
           {mercado.horario_funcionamento && (
             <div className="mercado-detalhe-horario">

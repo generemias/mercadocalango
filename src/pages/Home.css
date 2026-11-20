@@ -122,6 +122,48 @@
   opacity: 0.94;
 }
 
+/* ---------- 1.5 Mercado recomendado para você ----------
+   Destaque visual diferente do card de lista (que já usa a cor sólida
+   --accent como "cor de ação única" do app, ver comentário acima) — aqui
+   usamos borda + fundo --accent-bg, mesma linguagem do badge-promocao, pra
+   chamar atenção sem competir com a ação principal da tela. */
+
+.card-recomendado {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  border: 1.5px solid var(--accent);
+  border-radius: 20px;
+  padding: 16px 20px;
+  background: var(--accent-bg);
+  cursor: pointer;
+}
+
+.card-recomendado:hover {
+  opacity: 0.94;
+}
+
+.card-recomendado-eyebrow {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--accent);
+}
+
+.card-recomendado-nome {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.card-recomendado-motivo {
+  font-size: 13px;
+  color: var(--text);
+}
+
 .card-lista-ativa:active {
   transform: scale(0.99);
 }
