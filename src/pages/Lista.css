@@ -178,11 +178,12 @@
 
 .lista-adicionar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .lista-adicionar-input {
-  flex: 1 1 auto;
+  flex: 1 1 160px;
   font: inherit;
   font-size: 16px; /* >=16px evita zoom automático no iOS ao focar */
   padding: 12px 14px;
@@ -201,6 +202,29 @@
 }
 
 .lista-adicionar-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* Corredor do novo item — mesma altura/raio do campo de texto ao lado,
+   pra formar uma linha visualmente consistente (quebra pra uma 2ª linha
+   em telas estreitas via flex-wrap no .lista-adicionar). */
+.lista-adicionar-corredor {
+  flex: 1 1 140px;
+  font: inherit;
+  font-size: 13.5px;
+  padding: 0 10px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  min-height: 48px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.lista-adicionar-corredor:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-bg);
@@ -229,7 +253,26 @@
   transform: scale(0.96);
 }
 
-/* ---------- Lista de itens ---------- */
+/* ---------- Lista de itens, agrupada por corredor ---------- */
+
+.lista-grupo-corredor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lista-grupo-corredor + .lista-grupo-corredor {
+  margin-top: 4px;
+}
+
+.lista-corredor-titulo {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text);
+}
 
 .lista-itens {
   list-style: none;
@@ -316,6 +359,22 @@
 .lista-item.is-comprado .lista-item-nome {
   text-decoration: line-through;
   opacity: 0.55;
+}
+
+/* Corredor do item, editável a qualquer momento (não só na criação) —
+   compacto de propósito, não deve competir visualmente com o nome do
+   item nem com o valor pago. */
+.lista-item-corredor {
+  flex: 0 0 auto;
+  max-width: 92px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--text);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 6px;
+  cursor: pointer;
 }
 
 .lista-item-remover {

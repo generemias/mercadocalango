@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { CORREDOR_PADRAO, CORREDORES } from '../lib/corredores'
 import './Lista.css'
 
 /**
@@ -52,6 +53,15 @@ import './Lista.css'
  * convidado, só decisão do CEO. carregarListas() busca as listas próprias
  * E as compartilhadas na mesma consulta (a RLS de shopping_lists já libera
  * as duas; não precisa filtrar no código do app).
+ *
+ * Agrupar por corredor (pedido do CEO, ver migration 009 e
+ * src/lib/corredores.js): cada item ganha um corredor opcional, escolhido
+ * de uma lista FIXA (não texto livre — decisão do CEO, pra não gerar
+ * variações do mesmo corredor escritas de formas diferentes, o que
+ * quebraria o agrupamento). A lista deixa de ser uma sequência única e
+ * passa a ser renderizada em grupos (um por corredor, na ordem de
+ * CORREDORES), com "Outros" sempre por último — tanto pra item sem
+ * corredor escolhido quanto pra quem escolheu "Outros" de propósito.
  */
 // Mesma formatação automática de preço já usada no cadastro de produtos do
 // mercado (CadastroProdutos.jsx): completa ",00" se a pessoa digitou só a
@@ -87,6 +97,7 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
   const [meuConsumerId, setMeuConsumerId] = useState(null)
   const [itens, setItens] = useState([])
   const [novoItem, setNovoItem] = useState('')
+  const [novoItemCorredor, setNovoItemCorredor] = useState(CORREDOR_PADRAO)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(null)
   // Rascunho do valor pago por item, enquanto a pessoa ainda está digitando
@@ -180,7 +191,7 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
 
     const { data, error } = await supabase
       .from('shopping_list_items')
-      .select('id, nome_item, comprado, valor_pago')
+      .select('id, nome_item, comprado, valor_pago, categoria')
       .eq('list_id', listId)
       .order('created_at', { ascending: true })
 
@@ -202,6 +213,18 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
   const itensComprovados = itens.filter((item) => item.comprado && item.valor_pago != null)
   const totalGasto = itensComprovados.reduce((soma, item) => soma + Number(item.valor_pago), 0)
   const temAlgumValorPago = itensComprovados.length > 0
+
+  // Agrupa os itens por corredor (ver comentário no topo do arquivo) na
+  // ordem fixa de CORREDORES, pulando corredores sem nenhum item — item
+  // sem categoria (nunca escolheu, ou é de antes desta funcionalidade
+  // existir) cai no grupo "Outros" junto com quem escolheu "Outros" de
+  // propósito.
+  const gruposPorCorredor = useMemo(() => {
+    return CORREDORES.map((corredor) => ({
+      corredor,
+      itens: itens.filter((item) => (item.categoria ?? CORREDOR_PADRAO) === corredor),
+    })).filter((grupo) => grupo.itens.length > 0)
+  }, [itens])
 
   function handleTrocarLista(event) {
     setListaAtivaId(event.target.value)
@@ -301,8 +324,8 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
 
     const { data, error } = await supabase
       .from('shopping_list_items')
-      .insert({ list_id: listaAtivaId, nome_item: nome, comprado: false })
-      .select('id, nome_item, comprado, valor_pago')
+      .insert({ list_id: listaAtivaId, nome_item: nome, comprado: false, categoria: novoItemCorredor })
+      .select('id, nome_item, comprado, valor_pago, categoria')
       .single()
 
     if (error || !data) {
@@ -312,6 +335,31 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
 
     setItens((atual) => [...atual, data])
     setNovoItem('')
+    // Corredor NÃO volta pro padrão — quem está comprando costuma
+    // adicionar vários itens seguidos do mesmo corredor (ex: vários itens
+    // de limpeza de uma vez), então manter o último escolhido economiza
+    // toque repetido.
+  }
+
+  async function handleMudarCorredorItem(itemId, novoCorredor) {
+    const itemAtual = itens.find((item) => item.id === itemId)
+    if (!itemAtual) return
+
+    setItens((atual) =>
+      atual.map((item) => (item.id === itemId ? { ...item, categoria: novoCorredor } : item)),
+    )
+
+    const { error } = await supabase
+      .from('shopping_list_items')
+      .update({ categoria: novoCorredor })
+      .eq('id', itemId)
+
+    if (error) {
+      setErro('Não foi possível salvar o corredor agora.')
+      setItens((atual) =>
+        atual.map((item) => (item.id === itemId ? { ...item, categoria: itemAtual.categoria } : item)),
+      )
+    }
   }
 
   async function handleAlternarComprado(itemId) {
@@ -477,7 +525,9 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
             </div>
 
             {/* Adicionar item — fica no topo do conteúdo porque é a ação mais
-                repetida desta tela. */}
+                repetida desta tela. Corredor junto do nome (não um passo
+                separado depois) pra já nascer agrupado certo, sem precisar
+                editar em seguida. */}
             <form className="lista-adicionar" onSubmit={handleAdicionarItem}>
               <input
                 type="text"
@@ -487,67 +537,101 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
                 onChange={(event) => setNovoItem(event.target.value)}
                 aria-label="Novo item"
               />
+              <select
+                className="lista-adicionar-corredor"
+                value={novoItemCorredor}
+                onChange={(event) => setNovoItemCorredor(event.target.value)}
+                aria-label="Corredor do novo item"
+              >
+                {CORREDORES.map((corredor) => (
+                  <option key={corredor} value={corredor}>
+                    {corredor}
+                  </option>
+                ))}
+              </select>
               <button type="submit" className="lista-adicionar-botao" aria-label="Adicionar item">
                 +
               </button>
             </form>
 
-            {/* Itens da lista */}
-            <ul className="lista-itens">
-              {itens.length === 0 && (
+            {/* Itens da lista, agrupados por corredor (ver
+                gruposPorCorredor) — cada grupo com seu título, na mesma
+                ordem de CORREDORES. */}
+            {itens.length === 0 ? (
+              <ul className="lista-itens">
                 <li className="lista-vazia">Nenhum item ainda. Adicione o primeiro acima.</li>
-              )}
+              </ul>
+            ) : (
+              gruposPorCorredor.map((grupo) => (
+                <div key={grupo.corredor} className="lista-grupo-corredor">
+                  <h3 className="lista-corredor-titulo">{grupo.corredor}</h3>
+                  <ul className="lista-itens">
+                    {grupo.itens.map((item) => (
+                      <li
+                        key={item.id}
+                        className={`lista-item${item.comprado ? ' is-comprado' : ''}`}
+                      >
+                        <button
+                          type="button"
+                          className="lista-item-toque"
+                          onClick={() => handleAlternarComprado(item.id)}
+                        >
+                          <span
+                            className={`lista-item-checkbox${item.comprado ? ' is-marcado' : ''}`}
+                            aria-hidden="true"
+                          >
+                            {item.comprado ? '✓' : ''}
+                          </span>
+                          <span className="lista-item-nome">{item.nome_item}</span>
+                        </button>
 
-              {itens.map((item) => (
-                <li
-                  key={item.id}
-                  className={`lista-item${item.comprado ? ' is-comprado' : ''}`}
-                >
-                  <button
-                    type="button"
-                    className="lista-item-toque"
-                    onClick={() => handleAlternarComprado(item.id)}
-                  >
-                    <span
-                      className={`lista-item-checkbox${item.comprado ? ' is-marcado' : ''}`}
-                      aria-hidden="true"
-                    >
-                      {item.comprado ? '✓' : ''}
-                    </span>
-                    <span className="lista-item-nome">{item.nome_item}</span>
-                  </button>
+                        {/* Valor pago: só aparece depois que o item é
+                            marcado como comprado (ver comentário no topo do
+                            arquivo) — não faz sentido perguntar o preço de
+                            algo que ainda não foi pago. */}
+                        {item.comprado && (
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            className="lista-item-valor-pago"
+                            placeholder="R$"
+                            aria-label={`Valor pago em ${item.nome_item}`}
+                            value={
+                              valoresPagosDraft[item.id] ??
+                              (item.valor_pago != null ? String(item.valor_pago) : '')
+                            }
+                            onChange={(event) => handleDigitarValorPago(item.id, event.target.value)}
+                            onBlur={() => handleSalvarValorPago(item.id)}
+                          />
+                        )}
 
-                  {/* Valor pago: só aparece depois que o item é marcado
-                      como comprado (ver comentário no topo do arquivo) —
-                      não faz sentido perguntar o preço de algo que ainda
-                      não foi pago. */}
-                  {item.comprado && (
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      className="lista-item-valor-pago"
-                      placeholder="R$"
-                      aria-label={`Valor pago em ${item.nome_item}`}
-                      value={
-                        valoresPagosDraft[item.id] ??
-                        (item.valor_pago != null ? String(item.valor_pago) : '')
-                      }
-                      onChange={(event) => handleDigitarValorPago(item.id, event.target.value)}
-                      onBlur={() => handleSalvarValorPago(item.id)}
-                    />
-                  )}
+                        <select
+                          className="lista-item-corredor"
+                          aria-label={`Corredor de ${item.nome_item}`}
+                          value={item.categoria ?? CORREDOR_PADRAO}
+                          onChange={(event) => handleMudarCorredorItem(item.id, event.target.value)}
+                        >
+                          {CORREDORES.map((corredor) => (
+                            <option key={corredor} value={corredor}>
+                              {corredor}
+                            </option>
+                          ))}
+                        </select>
 
-                  <button
-                    type="button"
-                    className="lista-item-remover"
-                    aria-label={`Remover ${item.nome_item}`}
-                    onClick={() => handleRemoverItem(item.id)}
-                  >
-                    🗑
-                  </button>
-                </li>
-              ))}
-            </ul>
+                        <button
+                          type="button"
+                          className="lista-item-remover"
+                          aria-label={`Remover ${item.nome_item}`}
+                          onClick={() => handleRemoverItem(item.id)}
+                        >
+                          🗑
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            )}
           </>
         )}
       </main>
