@@ -112,7 +112,7 @@ function Home({
   async function carregarResumoLista(consumerId) {
     const { data: listasExistentes, error: listasError } = await supabase
       .from('shopping_lists')
-      .select('id, nome')
+      .select('id, nome, is_default')
       .eq('consumer_id', consumerId)
       .order('created_at', { ascending: true })
 
@@ -121,24 +121,42 @@ function Home({
       return
     }
 
-    let lista = listasExistentes?.[0] ?? null
+    let lista = listasExistentes?.find((item) => item.is_default) ?? listasExistentes?.[0] ?? null
 
     // Primeiro uso: ainda não existe nenhuma lista para este consumidor.
     // Criamos uma lista padrão, igual à tela Lista.jsx, pra Home nunca
-    // mostrar um resumo "quebrado".
+    // mostrar um resumo "quebrado". is_default + o índice único em
+    // shopping_lists (ver migration 008) evitam duas "Minha lista" quando
+    // Home.jsx e Lista.jsx tentam criar ao mesmo tempo (condição de corrida
+    // encontrada em teste ao vivo): se perdermos a corrida, o banco recusa
+    // com "unique violation" (23505) — tratamos isso como sucesso, não
+    // como erro, e buscamos a lista padrão que a outra tela já criou.
     if (!lista) {
       const { data: novaLista, error: criarError } = await supabase
         .from('shopping_lists')
-        .insert({ consumer_id: consumerId, nome: 'Minha lista' })
+        .insert({ consumer_id: consumerId, nome: 'Minha lista', is_default: true })
         .select('id, nome')
         .single()
 
-      if (criarError || !novaLista) {
+      if (criarError?.code === '23505') {
+        const { data: listaPadrao } = await supabase
+          .from('shopping_lists')
+          .select('id, nome')
+          .eq('consumer_id', consumerId)
+          .eq('is_default', true)
+          .maybeSingle()
+        lista = listaPadrao
+      } else if (criarError || !novaLista) {
+        setErro((atual) => atual ?? 'Não foi possível carregar sua lista agora.')
+        return
+      } else {
+        lista = novaLista
+      }
+
+      if (!lista) {
         setErro((atual) => atual ?? 'Não foi possível carregar sua lista agora.')
         return
       }
-
-      lista = novaLista
     }
 
     const { data: itens, error: itensError } = await supabase

@@ -137,11 +137,17 @@ function Lista({ onNavigateToHome, onNavigateToExplorar, onNavigateToPerfil }) {
     }
 
     if (listasProprias.length === 0) {
+      // is_default + o índice único em shopping_lists (ver migration 008)
+      // evitam duas "Minha lista" quando Home.jsx e Lista.jsx tentam criar
+      // ao mesmo tempo (condição de corrida encontrada em teste ao vivo):
+      // se perdermos a corrida, o banco recusa com "unique violation"
+      // (código 23505) — tratamos isso como sucesso (já existe uma lista
+      // padrão agora, que é o objetivo), não como erro.
       const { error: criarError } = await supabase
         .from('shopping_lists')
-        .insert({ consumer_id: consumerId, nome: 'Minha lista' })
+        .insert({ consumer_id: consumerId, nome: 'Minha lista', is_default: true })
 
-      if (criarError) {
+      if (criarError && criarError.code !== '23505') {
         setErro('Não foi possível criar sua lista agora.')
         setCarregando(false)
         return
